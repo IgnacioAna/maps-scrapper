@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-23T17:50:00.000Z"
+last_updated: "2026-08-23T18:48:00.000Z"
 last_activity: 2026-08-23
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 36
-  completed_plans: 36
+  total_phases: 11
+  completed_phases: 11
+  total_plans: 37
+  completed_plans: 37
   percent: 100
 ---
 
@@ -38,6 +38,32 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 137 y el objetivo es 0.
 
 ## Current Position
+
+Phase: 38 (borde-dialer) — COMPLETE (1/1 plan, 2026-08-23). 38-01 EXECUTED
+  (EDGE-01/02/04/05 + EDGE-03, ver detalle en `38-01-SUMMARY.md` y en
+  ROADMAP.md "### Phase 38"): guard de modales compartido
+  (`_PD_DISPO_MODAL_IDS`/`_pdAnyDispoModalOpen`) en el teclado del Power
+  Dialer y en `_pdHandleDisposition`; chip "hoy" del header alimentado del
+  CALL METRICS CORE (`/api/setters/cold-call-metrics?period=today`, opcion
+  1 del plan) con fallback local; botones de accion del Power Dialer
+  independientes de los quick-links opcionales; toast de fin de llamada
+  branch por `_dispoReal` (llamada manual ya no promete marcar un
+  resultado que no existe); `hookTimeout` de vitest a 30000 con evidencia
+  documentada. 46 tests nuevos en `tests/dialer-edges.test.js`, cada borde
+  verificado por mutacion (romper -> test exacto en rojo -> restaurar ->
+  diff vacio). 2 tests preexistentes (`tests/dial-hold.test.js`,
+  `tests/gate-next-step-ui.test.js`) actualizados para no pinear el array
+  local que el propio Task 1 elimina. Suite completa 125/125 archivos,
+  2320/2320 tests, baseline pre-plan real 124/2274 -- 0 regresiones, 2
+  corridas limpias. Cache-buster app.js `20260823c`->`20260823d`
+  (style.css sin tocar, `20260822a`). Commits: `220b15b` (feat EDGE-01),
+  `f4181e2` (feat EDGE-02), `0c52bc4` (fix EDGE-04), `8a9db28` (fix
+  EDGE-05 + cache-buster), `2cca8c8` (test), `a6693a7` (chore EDGE-03).
+  `.planning/REQUIREMENTS.md` actualizado (seccion `### EDGE` nueva,
+  EDGE-01/02/04/05 marcados [x], fila de Traceability). **No es parte del
+  milestone v4.0** (ya completo desde 2026-08-16) ni de un nuevo milestone
+  -- fase corta post-auditoria sobre las fases 35/36/37, sin capacidad de
+  producto nueva.
 
 Phase: 37 (ses-sesion-discado) — COMPLETE (4/4 planes, 2026-08-23)
   2026-08-22). Milestone v4.0 (Phases 28-34) quedo completo a nivel de

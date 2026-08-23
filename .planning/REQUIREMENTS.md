@@ -458,6 +458,41 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   campo por campo (verificado por mutación). `tests/metrics-consistency.test.js`
   sin editar (diff vacío), 18/18 verde.
 
+### EDGE — Bordes de interacción del dialer *(Phase 38, post-auditoría)*
+
+> No agrega capacidad de producto: cierra 5 bordes encontrados por la
+> auditoría del bloque del dialer (public/app.js 6922-8615) del 2026-08-23,
+> después de las fases 35/36/37.
+
+- [x] **EDGE-01**: El teclado del dialer respeta los modales de disposición
+  — con un modal abierto (callback/agendar/objeción/próximo paso) las
+  teclas 1-9 y S/B no hacen nada y no se puede disparar una segunda
+  disposición sobre el mismo lead. — Completo en 38-01:
+  `_PD_DISPO_MODAL_IDS` + `_pdAnyDispoModalOpen()` compartidos por
+  `_pdHandleDisposition` y el handler global de teclado (early-return,
+  Escape incluido). No cambia el mapeo de teclas ni el orden del grid
+  (D-02, fase 36).
+- [x] **EDGE-02**: Un solo número para la misma jornada — el chip de meta
+  del header y el marcador de la pantalla de cierre no se contradicen. —
+  Completo en 38-01: opción 1 del plan — `_pdFetchTodayCanon()` alimenta el
+  chip desde `/api/setters/cold-call-metrics?period=today` (CALL METRICS
+  CORE, nota #157), cacheado en `_pdTodayCanon`, refrescado al abrir el
+  dialer y tras cada disposición guardada, con fallback al cálculo local
+  si el fetch falla.
+- [x] **EDGE-04**: Un lead sin web, sin Maps, sin Instagram y sin email
+  conserva sus botones de acción en el Power Dialer. — Completo en 38-01:
+  el contenedor de quick-links/acciones ya no depende de
+  `(mapsUrl||safeW||igUrl||validEmail)` — `_actButtonsHTML(variant:'pd')`
+  siempre devuelve contenido.
+- [x] **EDGE-05**: Al colgar una llamada manual el SDR no recibe ninguna
+  instrucción de marcar un resultado que no existe. — Completo en 38-01:
+  el toast branchea por `_dispoReal` (sin "Marcá el resultado abajo" para
+  llamadas manuales) y el scroll/flash/foco a la fila de disposición queda
+  envuelto en `if (_dispoReal)`.
+- **EDGE-03** (flakiness de fixture, sin ID de producto): `hookTimeout` de
+  vitest subido a 30000 con la evidencia de las dos corridas documentada en
+  `vitest.config.js`. Ver `.planning/phases/38-borde-dialer/38-01-SUMMARY.md`.
+
 ---
 
 ## Future Requirements (deferred)
@@ -523,6 +558,10 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 | ACT-01, ACT-02, ACT-03, ACT-04, ACT-05 | 32 |
 | DIAL-01, DIAL-02, DIAL-03, DIAL-04 | 33 |
 | HOY-01, HOY-02, HOY-03, HOY-04, HOY-05 | 34 |
+| SCR-01, SCR-02, SCR-03, SCR-04 | 35 |
+| RESP-01, RESP-02, RESP-03 | 36 |
+| SES-01, SES-02, SES-03, SES-04, SES-05 | 37 |
+| EDGE-01, EDGE-02, EDGE-04, EDGE-05 | 38 (post-auditoría, sin capacidad nueva) |
 
 ✓ v2.0: 13/13 activos mapeados (COACH/ALERT diferidos) · v3.0: 10/10 mapeados
 (phases archivadas, milestone parkeado) · **v4.0: 27/27 requirements mapeados
@@ -531,12 +570,16 @@ v4.0 y en el research decía "23"; el conteo real de la sección es 27
 (NEXT 4 + GATE 4 + COMM 4 + ACT 5 + DIAL 5 + HOY 5), y son esos 27 los que
 están mapeados 1:1 a fase, sin huérfanos ni duplicados. **Phases 28-34**:
 GATE-03 (calendario) y DIAL-05 (panel arrastrable) se adelantaron a una
-Phase 28 de puro frontend porque no dependen del modelo de datos.
+Phase 28 de puro frontend porque no dependen del modelo de datos. **Phases
+35-38** (post-milestone, sobre la base v4.0 ya completa): SCR (atribución de
+guion) + RESP (la disposición responde) + SES (sesión de discado) + EDGE
+(bordes de interacción, sin ID nuevo de producto salvo EDGE-03 que es
+config de test) — 16/16 requirements mapeados.
 
 ---
 
-*Last updated: 2026-08-13 — Roadmap de v4.0 creado (Phases 28-33: NEXT →
-GATE → COMM → ACT → DIAL → HOY). Los 27 requirements reales de la sección
-v4.0 quedaron mapeados 1:1, uno por categoría/fase. v3.0 "Agente de voz"
-sigue PARKEADO: fases 24-27 archivadas en
-`.planning/archive/v3.0-agente-voz/`, se retoma después de v4.0.*
+*Last updated: 2026-08-23 — Phase 38 (borde-dialer) agregada: 4 requirements
+EDGE (EDGE-01/02/04/05) cerrando bordes de interacción encontrados por
+auditoría sobre las fases 35/36/37. v4.0 (Phases 28-34) sigue completo desde
+el 2026-08-13; v3.0 "Agente de voz" sigue PARKEADO: fases 24-27 archivadas
+en `.planning/archive/v3.0-agente-voz/`, se retoma después de v4.0.*

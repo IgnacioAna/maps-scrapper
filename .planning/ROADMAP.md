@@ -613,9 +613,53 @@ Plans:
 
 ---
 
+### Phase 38: EDGE — Bordes de interacción del dialer (post-auditoría)
+
+**Goal**: Cerrar 5 bordes de interacción encontrados por la auditoría del
+bloque del dialer (public/app.js 6922-8615) del 2026-08-23, después de las
+fases 35/36/37. Fase corta, sin milestone propio — no agrega ninguna
+capacidad de producto nueva, solo corrige bordes.
+**Depends on**: Phase 35, Phase 36, Phase 37
+**Requirements**: EDGE-01, EDGE-02, EDGE-04, EDGE-05 (EDGE-03 es config de
+test, sin ID de requisito de producto)
+**Success Criteria** (what must be TRUE):
+
+  1. **EDGE-01** — Con un modal de disposición abierto, las teclas 1-9 y
+     S/B del dialer no hacen nada — no se puede disparar una segunda
+     disposición sobre el mismo lead ni mover la cola por debajo del modal.
+  2. **EDGE-02** — El chip de meta del header y el marcador de la pantalla
+     de cierre no pueden contradecirse: o miden lo mismo, o el chip deja
+     de prometer "hoy".
+  3. **EDGE-04** — Un lead sin web, sin Maps, sin Instagram y sin email
+     conserva sus botones de acción en el Power Dialer.
+  4. **EDGE-05** — Al colgar una llamada manual el SDR no recibe ninguna
+     instrucción de marcar un resultado que no existe.
+
+**Decisiones ya tomadas** (no re-abrir):
+
+- **EDGE-02, opción elegida: 1** — alimentar el chip del dato canónico del
+  servidor (`/api/setters/cold-call-metrics?period=today`), no renombrar
+  la etiqueta (opción 2). Ver `38-01-SUMMARY.md`.
+
+**Non-goals**: no agregar capacidad de producto. No tocar `_pdKeyOutcomes`
+ni el orden del grid (D-02 de la fase 36).
+**Plans**: 1 plan (5 tareas: 4 edges + config de test)
+
+Plans:
+
+- [x] 38-01-PLAN.md — EDGE-01/02/04/05 + EDGE-03: guard de modales
+  compartido en el teclado, chip alimentado del CALL METRICS CORE,
+  botones de acción independientes de los quick-links, toast de llamada
+  manual sin promesa de disposición, `hookTimeout` de vitest a 30000
+  (completed 2026-08-23, 38-01-SUMMARY.md — 46 tests nuevos en
+  `tests/dialer-edges.test.js`, cada borde verificado por mutación, suite
+  completa 2320/2320 baseline 2274/2274, **Phase 38 COMPLETA (1/1 plan)**)
+
+---
+
 ## Progress
 
-**Execution Order:** Phases execute in numeric order: 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37
+**Execution Order:** Phases execute in numeric order: 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37 → 38
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -629,6 +673,7 @@ Plans:
 | 35. SCR — Atribución de guion | 4/4 | human_needed (UAT pendiente) | 2026-08-22 |
 | 36. DISP — La disposición responde | 3/3 | human_needed (UAT pendiente) | 2026-08-23 |
 | 37. SES — La sesión de discado como partida | 4/4 | human_needed (UAT pendiente) | 2026-08-23 |
+| 38. EDGE — Bordes de interacción del dialer (post-auditoría) | 1/1 | Complete | 2026-08-23 |
 
 
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)
