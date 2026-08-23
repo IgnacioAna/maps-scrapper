@@ -609,7 +609,7 @@ Plans:
 
 **Wave 4** *(depende de 37-02 y 37-03)*
 
-- [ ] 37-04-PLAN.md — SES-03 (Mi rendimiento): tabla "Sesiones de discado" — hoy contra ayer, con la respuesta de estado a la vista
+- [x] 37-04-PLAN.md — SES-03/SES-04 (Mi rendimiento): tabla "Sesiones de discado" — hoy contra ayer, con la respuesta de estado a la vista (completed 2026-08-23, 37-04-SUMMARY.md — `_mypLoadSessions` + `_sesHistoryRows` [37-03] SESSION-PURE, agrupada Hoy/Ayer/fecha sin total diario, setter efectivo explícito en modo "Ver como SDR", `SES_MOOD_LABELS` un solo mapa compartido con los chips de cierre, estado vacío con texto guía, marca discreta para sesiones cerradas solas, 42 tests nuevos verificados por mutación, suite completa 2274/2274 baseline 2232/2232 — verificado en preview real contra datos vivos, ver SUMMARY)
 
 ---
 
@@ -628,7 +628,7 @@ Plans:
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
 | 35. SCR — Atribución de guion | 4/4 | human_needed (UAT pendiente) | 2026-08-22 |
 | 36. DISP — La disposición responde | 3/3 | Complete | 2026-08-23 |
-| 37. SES — La sesión de discado como partida | 3/4 | Executing | — |
+| 37. SES — La sesión de discado como partida | 4/4 | Complete | 2026-08-23 |
 
 
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)

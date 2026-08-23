@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-23T17:10:00.000Z"
+last_updated: "2026-08-23T17:50:00.000Z"
 last_activity: 2026-08-23
 progress:
   total_phases: 10
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 36
-  completed_plans: 35
-  percent: 97
+  completed_plans: 36
+  percent: 100
 ---
 
 # SCM — STATE
@@ -39,19 +39,22 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 37 (ses-sesion-discado) — EXECUTING
+Phase: 37 (ses-sesion-discado) — COMPLETE (4/4 planes, 2026-08-23)
   2026-08-22). Milestone v4.0 (Phases 28-34) quedo completo a nivel de
   ejecucion (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
   (hoy-vista-diaria): COMPLETE" mas abajo). El orquestador arranco un
   milestone/fase nueva (35-37: atribucion de guion, disposicion que
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
-  scope de este executor.
-Plan: 3 of 4
+  scope de este executor. **Con 37-04 EXECUTED, las 3 fases 35/36/37 quedan
+  completas a nivel de ejecucion (11/11 planes: 4+3+4) -- el cierre formal
+  del milestone sigue siendo tarea del orquestador, no de este executor.**
+Plan: 4 of 4 -- las 4 con SUMMARY (37-01-SUMMARY.md, 37-02-SUMMARY.md,
+  37-03-SUMMARY.md, 37-04-SUMMARY.md). **Fase 37 (SES) COMPLETA (4/4 planes).**
   `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
   `35-04-SUMMARY.md`). 36-01, 36-02 y 36-03 EXECUTED (ver detalle abajo).
   **Fase 36 (DISP) COMPLETA (3/3 planes).**
-Status: Executing Phase 37
+Status: Phase 37 COMPLETE
   call-disposition + script-effectiveness) completo y verificado
   (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
   `35-01-SUMMARY.md`). 35-02 (siembra automatica del guion al iniciar la
@@ -289,10 +292,76 @@ Status: Executing Phase 37
   para 37-04: tabla "Sesiones de discado" en Mi rendimiento (hoy contra
   ayer, con la respuesta de estado a la vista) -- consume
   `GET /api/setters/dial-sessions` de 37-02, sin sorpresas de shape.
-Last activity: 2026-08-23 -- Phase 37 Plan 3 (SES-02/SES-04, ciclo de vida
-  de la sesion en el Power Dialer + pantalla de cierre unica) completado.
-  Siguiente: Phase 37 Plan 4 (SES-03 -- tabla de historial de sesiones en
-  Mi rendimiento).
+  37-04 EXECUTED (2026-08-23, SES-03/SES-04 -- tabla "Sesiones de discado"
+  en Mi rendimiento, cierra la Fase 37): seccion `#myp-sessions` en
+  `view-myperf` (public/index.html, despues de "Evolucion" y antes de
+  `#myp-empty`) + `_mypLoadSessions(effectiveSetter)` colgada de `_mypLoad`
+  con `.catch(` (mismo patron que `_mypLoadPipeline`, sin bloquear el
+  resto de la vista), `GET /api/setters/dial-sessions?limit=20` via
+  `apiUrl(`, `?setter=` explicito SOLO si `effectiveSetter` y rol
+  admin/supervisor (reglas #135/#146 -- un SDR real nunca lo manda).
+  `_sesHistoryRows(sessions, nowMs)` (nuevo, dentro del bloque
+  `[37-03] SESSION-PURE`, reloj SIEMPRE por parametro): agrupa por dia de
+  calendario LOCAL con encabezado Hoy/Ayer/fecha, SIN sumar ningun total
+  por dia (mismo criterio documentado en 37-02 -- competiria con el
+  funnel canonico de la misma pantalla). `SES_MOOD_LABELS`
+  (bien/normal/costo/pesimo) se movio DENTRO del mismo bloque puro, se
+  declara 1 sola vez, y lo consumen los DOS lugares: los chips de la
+  pantalla de cierre (`_pdRenderClosingScreen`, ahora
+  `Object.entries(SES_MOOD_LABELS)` en vez del array escrito a mano) y la
+  columna "Como la remo" del historial (guion discreto si esta vacio,
+  D-03). Marcadas en negrita (D-01), atendieron/conversaciones en tono
+  secundario. Sesion `closedBy:'auto'` con marca discreta "cerrada sola" +
+  title explicativo (T-37-18). Sesion abierta (`!endedAt`) se pinta "en
+  curso...", sin numeros. Estado vacio con texto guia, nunca tabla pelada.
+  Todo lo que viene del servidor pasa por `escHtml` (T-37-16). Cache-buster
+  app.js `20260823b`->`20260823c`; style.css SIN tocar (`20260822a`, diff
+  vacio confirmado). 42 tests nuevos en `tests/dial-session-myperf-ui.test.js`
+  (>=12 pedidos): puro `_sesHistoryRows` (agrupacion Hoy/Ayer/fecha, ningun
+  row 'dia' con contadores, sesion en curso sin numeros, `closedBy:'auto'`
+  marcado, orden descendente, reloj por parametro), cableado
+  (`_mypLoadSessions` unica, `apiUrl(`, `escHtml`, `SES_MOOD_LABELS`
+  compartido, texto vacio), estructura del HTML y cache-buster. Verificado
+  por mutacion (2 rondas: romper el guard de agrupacion por dia y desnudar
+  el `escHtml` de `hoyFilter` tumban exactamente los tests esperados y
+  ningun otro, restaurado con `git checkout --`). Deviation minima (Rule 1,
+  anticipada por el propio plan): 1 assertion de
+  `tests/dial-session-close-ui.test.js` (37-03) pineaba el array literal
+  viejo de `moodOptions` -- actualizada para verificar `SES_MOOD_LABELS` en
+  su lugar nuevo, 55/56 tests intactos. Suite completa 124/124 archivos,
+  2274/2274 tests (baseline pre-plan real 123/2232), 0 regresiones, 2
+  corridas limpias. `git diff --stat package.json package-lock.json`
+  vacio. **Verificacion en preview con datos REALES** (a diferencia de
+  37-03, esta sesion SI tuvo Bash + un preview server corriendo en :3000):
+  el proceso viejo (arrancado ~04:00, previo a los commits de la Fase 37)
+  se reemplazo por uno fresco sobre `tmp/preview-data` (gitignored),
+  password de admin reseteada localmente segun nota #15 de CLAUDE.md;
+  login real, se abrieron y cerraron 2 sesiones reales via los 3 endpoints
+  de `dialSessions` (una `mode:'calls'`, otra `mode:'hoy'`+`hoyFilter:
+  'callbacks'`), con una llamada real inyectada en el callLog de cada una
+  para contadores no-cero, mood respondido en una ('bien') y salteado en
+  la otra; la funcion `_mypLoadSessions` REAL (extraida literal de
+  `public/app.js`, no una reescritura) se ejecuto contra el servidor
+  real con `document`/`fetch` stubbeados minimos -- el HTML resultante
+  confirma agrupacion "Hoy", orden descendente, Marcadas en negrita,
+  "Bien" vs guion discreto "-", y Cola legible ("Llamadas · 40" /
+  "Hoy · callbacks · 8"). Se confirmo ademas que pasar un `effectiveSetter`
+  de OTRO SDR (Paula, sin sesiones) arma la URL con `?setter=` y renderiza
+  el estado vacio para ELLA, y que con rol `setter` nunca se manda
+  `?setter=`. La sesion de prueba con 0 marcadas (<120s) qued afuera del
+  listado por defecto, confirmando el filtro de ruido de 37-02 en
+  produccion real, no solo en tests. SES-03/SES-04 cerrados de punta a
+  punta (REQUIREMENTS.md actualizado con la referencia a 37-04-SUMMARY.md
+  ademas de 37-02, sin tocar los checkboxes que ya estaban en [x]).
+  ROADMAP.md actualizado a mano (Phase 37 fila `## Progress` -> 4/4
+  Complete, checkbox 37-04-PLAN.md tildado). **Fase 37 (SES) COMPLETA
+  (4/4 planes).**
+Last activity: 2026-08-23 -- Phase 37 Plan 4 (SES-03/SES-04, tabla de
+  historial de sesiones en Mi rendimiento) completado. **Fase 37 (SES)
+  COMPLETA.** Las 3 fases de esta corrida (35 SCR, 36 DISP, 37 SES) quedan
+  completas a nivel de ejecucion -- el cierre formal del milestone v4.0
+  (que ya estaba completo desde el 2026-08-16, ver bloque "Phase 34" mas
+  abajo) sigue siendo tarea del orquestador.
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 
