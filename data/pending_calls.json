@@ -41,6 +41,20 @@
       "reachedActive": true,
       "createdAt": "2026-08-17T16:58:21.976Z",
       "updatedAt": "2026-08-17T16:59:53.938Z"
+    },
+    {
+      "id": "pc_l_clinicaodontologicadentalwhite_576023866240_1787352057980",
+      "leadId": "l_clinicaodontologicadentalwhite_576023866240",
+      "leadName": "Clinica Odontologica Dental White",
+      "setterId": "setter_ignacio",
+      "userId": "user_admin_ignacio",
+      "startedAt": "2026-08-21T22:40:57.980Z",
+      "endedAt": null,
+      "durationSecs": 0,
+      "fromNumber": "+17867725783",
+      "reachedActive": false,
+      "createdAt": "2026-08-21T22:40:57.984Z",
+      "updatedAt": "2026-08-21T22:40:57.984Z"
     }
   ]
 }
