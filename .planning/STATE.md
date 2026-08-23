@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-23T15:45:00.000Z"
+last_updated: "2026-08-23T15:59:43.000Z"
 last_activity: 2026-08-23
 progress:
   total_phases: 10
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 36
-  completed_plans: 31
-  percent: 86
+  completed_plans: 32
+  percent: 89
 ---
 
 # SCM — STATE
@@ -39,7 +39,7 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 36 (disp-disposicion-responde) — EXECUTING
+Phase: 36 (disp-disposicion-responde) — COMPLETE (3/3 planes, 2026-08-23)
   2026-08-22). Milestone v4.0 (Phases 28-34) quedo completo a nivel de
   ejecucion (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
   (hoy-vista-diaria): COMPLETE" mas abajo). El orquestador arranco un
@@ -49,8 +49,9 @@ Phase: 36 (disp-disposicion-responde) — EXECUTING
   scope de este executor.
 Plan: 3 of 3
   `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
-  `35-04-SUMMARY.md`). 36-01 y 36-02 EXECUTED (ver detalle abajo).
-Status: Executing Phase 36
+  `35-04-SUMMARY.md`). 36-01, 36-02 y 36-03 EXECUTED (ver detalle abajo).
+  **Fase 36 (DISP) COMPLETA (3/3 planes).**
+Status: Phase 36 completa. Siguiente: Phase 37 (sin plan generado)
   call-disposition + script-effectiveness) completo y verificado
   (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
   `35-01-SUMMARY.md`). 35-02 (siembra automatica del guion al iniciar la
@@ -118,9 +119,44 @@ Status: Executing Phase 36
   veces. Detalle en `36-02-SUMMARY.md`. Commits: `c90c3f8` (feat, red de
   seguridad del audio), `507cbc4` (feat, metadata sincronica + finalize
   sin esperas + meta en el agendado), `05d2172` (test).
-Last activity: 2026-08-23 -- Phase 36 Plan 02 (RESP-02) ejecutado y
-  verificado. Siguiente: Plan 36-03 (RESP-03, pad DTMF visible/
-  persistente) -- sin plan generado todavia (requiere plan-phase).
+  36-03 EXECUTED (2026-08-23, RESP-03 -- el teclado DTMF arranca visible
+  y recuerda): el pad `#telnyx-dtmf-pad` nacia siempre con display:none y
+  su toggle era un flip volatil del estilo inline sin persistencia. Ahora
+  arranca ABIERTO por defecto (el criterio del ROADMAP admitia "visible O
+  recuerda el ultimo estado" -- se hicieron las dos) y recuerda el ultimo
+  estado por navegador: `_dtmfPadPrefOpen()` (lee `scm_dtmf_pad`, default
+  abierto salvo `'0'`, mismo idioma `!== '0'` que `scm_audio_micChain`),
+  `_applyDtmfPadPref(open)` (pinta pad + boton, no escribe nada) y
+  `_setDtmfPadPref(open)` (persiste y aplica -- el toggle ahora llama a
+  esto en vez de mutar `pad.style.display` directo). Se reaplica en
+  `_startTelnyxCall` justo despues de `_tlxApplyPos('call')`: el panel se
+  reusa entre llamadas y el estilo inline queda pegado al ultimo uso, asi
+  que reaplicar en cada apertura es lo que hace que se sienta igual en la
+  llamada 1 y en la 40. `public/index.html` NO cambia el markup del pad
+  (sigue `display:none`, lo abre el JS) -- si `_applyDtmfPadPref` fallara,
+  el estado inicial del DOM sigue siendo el de hoy. Las 12 teclas y el
+  envio de tonos (`.dtmf(k)` sobre `_telnyx.activeCall`) intactos.
+  Cache-buster app.js `20260822d`->`20260823a`; style.css SIN tocar
+  (`20260822a`). 25 tests nuevos en `tests/dtmf-pad-pref.test.js`,
+  verificados por mutacion (cambiar el default a `=== '1'` pone en rojo
+  exactamente los 2 tests que lo cubren, 23/25 siguieron verdes,
+  restaurado con `git checkout --`). Deviation Rule 1 (auto-fix): la
+  insercion corrio ~280 chars una ventana fija de extraccion en
+  `tests/script-attribution-core.test.js` (Fase 35, pineaba 6200 chars
+  desde `window._startTelnyxCall = async`) -- ampliada a 6800, sin tocar
+  el proposito del test (mismo patron de 33-03/34-02). Suite completa
+  2132/2132 (120 archivos), baseline pre-plan real 2107/2107 (119
+  archivos) -- 0 regresiones, corrida 2 veces. Detalle en
+  `36-03-SUMMARY.md`. Commits: `0a92bfe` (feat), `c267b00` (test).
+  **Fase 36 (DISP) COMPLETA (3/3 planes).** RESP-01/RESP-02/RESP-03
+  cerrados (REQUIREMENTS.md marcado [x] los 3). ROADMAP.md actualizado a
+  mano (Phase 36 fila `## Progress` -> 3/3 Complete 2026-08-23, checkbox
+  36-03-PLAN.md tildado).
+Last activity: 2026-08-23 -- Phase 36 Plan 03 (RESP-03, pad DTMF
+  visible/persistente) ejecutado y verificado. **Fase 36 (DISP) COMPLETA
+  (3/3 planes).** Siguiente: Phase 37 (ses-sesion-discado) -- sin plan
+  generado todavia (requiere plan-phase; depende de Phases 33 y 35, ya
+  completas).
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 
