@@ -12778,7 +12778,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // no atiendan — el SDR igual tiene que marcar No atendió/Buzón. (Antes
         // usaba durationSecs, que ahora es talk-time y sería 0 en no-contacto.)
         if (leadId && attemptedSecs >= 1) {
-          window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')} · Marcá el resultado abajo ↓`, { type: 'info', duration: 5000 });
+          // Fase 38 (EDGE-05): una llamada manual (_dispoReal===false, número
+          // suelto sin lead real) no tiene fila de disposición en ninguna
+          // vista — "Marcá el resultado abajo" le pedía algo que no existe, y
+          // _focusDispositionRow reintentaba 12 veces cada 400ms buscando una
+          // `.call-row[data-id="manual_..."]` que nunca aparece. El toast
+          // ahora solo informa el fin de la llamada para ese caso.
+          window.showToast?.(_dispoReal
+            ? `Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')} · Marcá el resultado abajo ↓`
+            : `Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')}`,
+            { type: 'info', duration: _dispoReal ? 5000 : 3000 });
           // [36-02] RESP-02: la metadata (_metaObj) ya se armó y publicó en
           // _pendingTelnyxCallMetadata ARRIBA, en el cuerpo sincrónico —
           // acá solo queda el upsert del pendiente (usa _metaObj.endedAt) y
@@ -12815,6 +12824,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               _dispoGateSet(leadId, _callsLeadsById.get(leadId)?.name || '', _dispoStartedAtIso);
             }
           }
+          // Fase 38 (EDGE-05): todo lo de acá abajo (navegar a Llamadas, hacer
+          // scroll/flash a la fila, enfocar el dropdown, armar el shortcut
+          // numérico de 30s) es exclusivamente para marcar un resultado — sin
+          // fila de disposición real (llamada manual) no hay nada que enfocar.
+          if (_dispoReal) {
           // Scroll + flash + open al dropdown de disposition.
           // Audit 2026-07-06: si la llamada se hizo desde HOY, saltamos a Llamadas —
           // antes el toast decía "marcá el resultado abajo" pero el dropdown vivía en
@@ -12892,6 +12906,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // En el Power Dialer no hay row de lista que enfocar: la grilla del
           // dialer es la UI de resultado y ya tiene sus propios atajos 1-9.
           if (!_pd.active) _focusDispositionRow();
+          } // Fase 38 (EDGE-05): fin del if (_dispoReal)
         }
       }, 500);
     }
