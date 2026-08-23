@@ -8499,6 +8499,228 @@ app.post('/api/setters/hoy-hygiene-snapshot', requireAuth, (req, res) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// SESIÓN DE DISCADO (Fase 37, SES-01/SES-05) — dialSession
+// ═══════════════════════════════════════════════════════════════════════════
+// Una sesión de discado es la "partida" que arranca al abrir el Power Dialer
+// y se cierra al salir: startedAt, endedAt, quién marcó, modo, filtro con el
+// que se armó la cola, tamaño de esa cola y los contadores derivados del CALL
+// METRICS CORE sobre esa ventana. Antes esto no existía como objeto: `_pd`
+// (public/app.js) es estado efímero de cliente y `_pdExit()` no guarda nada.
+//
+// NO confundir con `data.sessions` — las "sesiones de setteo" de la era
+// WhatsApp (`{id, setter, startedAt, endedAt, summary, aiSummary}`, endpoints
+// `/api/setters/sessions/start|end`, unas líneas más abajo en este archivo).
+// Esa entidad sigue viva pero colgada de `view-crm`, que está PARKEADA, con 1
+// registro de abril de un setter que ya no existe. No se toca, no se reusa,
+// no se extiende: la entidad nueva es `data.dialSessions`, sus rutas son
+// `/api/setters/dial-sessions`.
+//
+// Persistencia: una key más dentro de `setters.json` (mismo patrón que
+// `hoyHygieneSnapshots` de la Fase 34) — `loadSettersData`/`saveSettersData`
+// ya redondean el objeto completo, así que no hace falta wiring de
+// export-data/pre-deploy/seed/backup (regla #21 de CLAUDE.md satisfecha por
+// construcción, cero archivo nuevo).
+
+const DIAL_SESSION_MODES = new Set(['calls', 'hoy']);
+const DIAL_SESSION_HOY_FILTERS = new Set(['compromisos', 'esperando', 'callbacks', 'interesados', 'reintentos']);
+const DIAL_SESSION_CAP_PER_SETTER = 90; // poda: ~3 meses a una sesión por día
+const DIAL_SESSION_MAX_FILTER_KEYS = 8;
+
+// Quién es el dueño de la sesión que se escribe. `setterId` sale SIEMPRE de
+// `req.auth.user.setterId` — el setter REAL del usuario logueado, NUNCA
+// `getEffectiveAuth(req).setterId`. Motivo: las llamadas se atribuyen por
+// `callLog[].by` → `_callSetterId`, o sea al usuario real. Si un admin
+// discando en modo "Ver como SDR · Paula" abriera la sesión como
+// `setter_paula`, los contadores derivados del CORE darían 0 (sus llamadas
+// se atribuyen a SU setter). La sesión pertenece a quien marca, no a quien
+// impersona.
+function _dialSessionActor(req) {
+  const eff = getEffectiveAuth(req);
+  if (!['admin', 'supervisor', 'setter'].includes(eff.role)) return { setterId: '', userId: '', error: 'rol' };
+  const setterId = req.auth?.user?.setterId || '';
+  const userId = req.auth?.user?.id || '';
+  // Guard crítico, NO cosmético: _ccCollectCalls(data, {setterId:''}) NO
+  // filtra nada y devolvería las llamadas de TODO el equipo — una sesión sin
+  // setter se llevaría los números de todos.
+  if (!setterId) return { setterId: '', userId, error: 'sin_setter' };
+  return { setterId, userId, error: '' };
+}
+
+// Pura, whitelist-and-coerce (mismo idioma que el resto del repo): un body
+// raro nunca tira 4xx, se clampea.
+function _dialSessionSanitize(body) {
+  const b = body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  const mode = DIAL_SESSION_MODES.has(b.mode) ? b.mode : 'calls';
+  const hoyFilter = DIAL_SESSION_HOY_FILTERS.has(b.hoyFilter) ? b.hoyFilter : null;
+  let queueSize = Math.trunc(Number(b.queueSize));
+  if (!Number.isFinite(queueSize) || queueSize < 0) queueSize = 0;
+  if (queueSize > 100000) queueSize = 100000;
+  const filtroIn = b.filtro && typeof b.filtro === 'object' && !Array.isArray(b.filtro) ? b.filtro : {};
+  const filtro = {};
+  let n = 0;
+  for (const k of Object.keys(filtroIn)) {
+    if (n >= DIAL_SESSION_MAX_FILTER_KEYS) break;
+    const key = String(k).slice(0, 24);
+    // String() aplasta cualquier objeto/array/función a texto plano — nunca
+    // queda un valor anidado en lo que se persiste.
+    filtro[key] = String(filtroIn[k] ?? '').slice(0, 60);
+    n++;
+  }
+  return { mode, hoyFilter, filtro, queueSize };
+}
+
+// El ÚNICO lugar donde se calculan números de sesión (SES-05). Deriva TODO
+// del CALL METRICS CORE sobre [startedAt, endTs) filtrado por el setter de la
+// sesión — nunca re-implementa el funnel.
+function _dialSessionCounters(data, session, endTs) {
+  // Defensa en profundidad del guard de _dialSessionActor: si por lo que sea
+  // llega una sesión sin setterId, jamás devolver las llamadas del equipo.
+  if (!session || !session.setterId) {
+    return { dials: 0, connects: 0, conversations: 0, appointments: 0, deals: 0, totalDurationS: 0, avgConvDurationS: 0, leads: 0, byOutcome: {} };
+  }
+  const fromTs = new Date(session.startedAt).getTime();
+  const toTs = (!endTs || endTs <= fromTs) ? fromTs : endTs;
+  const calls = _ccCollectCalls(data, { setterId: session.setterId });
+  const inWindow = calls.filter((c) => c.ts >= fromTs && c.ts < toTs);
+  // Pasarle la lista YA filtrada es un no-op (el agregado re-aplica el mismo
+  // predicado de setterId) y garantiza que byOutcome se tallee EXACTAMENTE
+  // sobre las entries que el agregado contó como `dials`.
+  const agg = _ccFunnelAggregate(inWindow, data.calendar, fromTs, toTs, { setterId: session.setterId });
+  // Tally crudo del outcome — sin sets de outcomes ni umbrales propios. Toda
+  // interpretación ("qué es atendida", "qué es conversación") viene de `agg`.
+  const byOutcome = {};
+  const leadIds = new Set();
+  for (const c of inWindow) {
+    byOutcome[c.outcome] = (byOutcome[c.outcome] || 0) + 1;
+    leadIds.add(c.leadId);
+  }
+  return {
+    dials: agg.dials, connects: agg.connects, conversations: agg.conversations,
+    appointments: agg.appointments, deals: agg.deals,
+    totalDurationS: agg.totalDurationS, avgConvDurationS: agg.avgConvDurationS,
+    leads: leadIds.size, byOutcome,
+  };
+}
+
+// Pura. Deja como mucho DIAL_SESSION_CAP_PER_SETTER sesiones de ese setter
+// (las más recientes por startedAt), sin tocar las de los demás.
+function _dialSessionPrune(list, setterId) {
+  const arr = Array.isArray(list) ? list : [];
+  const mine = arr.filter((s) => s.setterId === setterId);
+  if (mine.length <= DIAL_SESSION_CAP_PER_SETTER) return arr;
+  const others = arr.filter((s) => s.setterId !== setterId);
+  mine.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  const kept = mine.slice(0, DIAL_SESSION_CAP_PER_SETTER);
+  return [...others, ...kept];
+}
+
+// Pura sobre `data`, sin I/O. La usan el cierre explícito (closedBy:'user')
+// y el auto-cierre de huérfanas (closedBy:'auto').
+function _dialSessionFinalize(data, session, { closedBy, endTs, processed } = {}) {
+  session.endedAt = new Date(endTs).toISOString();
+  const fromTs = new Date(session.startedAt).getTime();
+  session.durationS = Math.max(0, Math.round((endTs - fromTs) / 1000));
+  session.closedBy = closedBy || '';
+  if (processed !== undefined && processed !== null) {
+    const p = Math.trunc(Number(processed));
+    if (Number.isFinite(p) && p >= 0) session.processed = p;
+  }
+  session.counters = _dialSessionCounters(data, session, endTs);
+  return session;
+}
+
+// La última sesión CERRADA de ese setter, distinta de la actual, con
+// counters.dials > 0 — proyectada (no el objeto entero), o null.
+function _dialSessionPrevious(data, session) {
+  const candidates = (data.dialSessions || []).filter((s) =>
+    s.setterId === session.setterId && s.id !== session.id && s.endedAt && s.counters && s.counters.dials > 0
+  );
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  const p = candidates[0];
+  return { id: p.id, startedAt: p.startedAt, endedAt: p.endedAt, durationS: p.durationS, counters: p.counters };
+}
+
+// Abrir sesión. Handler 100% SYNC — no hace falta mutateSettersData (regla
+// #19: el mutex es para handlers con await entre el load y el save).
+app.post('/api/setters/dial-sessions', requireAuth, (req, res) => {
+  const actor = _dialSessionActor(req);
+  if (actor.error === 'rol') return res.status(403).json({ error: 'No autorizado.' });
+  if (actor.error === 'sin_setter') {
+    return res.status(400).json({ error: 'Tu cuenta no tiene un SDR vinculado: no se puede registrar la sesión de discado.' });
+  }
+  const data = loadSettersData();
+  if (!Array.isArray(data.dialSessions)) data.dialSessions = [];
+
+  const now = Date.now();
+  // Auto-cierre de huérfanas: toda sesión de ESE setter con !endedAt se
+  // finaliza antes de crear la nueva, anclada a su ÚLTIMA llamada real
+  // dentro de [startedAt, ahora] (o a startedAt si no hubo ninguna). Anclar
+  // a la última llamada evita que una pestaña cerrada el viernes convierta
+  // la sesión en una de 60 horas.
+  const calls = _ccCollectCalls(data, { setterId: actor.setterId });
+  for (const s of data.dialSessions) {
+    if (s.setterId !== actor.setterId || s.endedAt) continue;
+    const openFrom = new Date(s.startedAt).getTime();
+    let lastCallTs = openFrom;
+    for (const c of calls) {
+      if (c.ts >= openFrom && c.ts <= now && c.ts > lastCallTs) lastCallTs = c.ts;
+    }
+    _dialSessionFinalize(data, s, { closedBy: 'auto', endTs: lastCallTs });
+  }
+
+  const sanitized = _dialSessionSanitize(req.body);
+  const session = {
+    id: `dsess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    setterId: actor.setterId,
+    by: actor.userId,
+    startedAt: new Date(now).toISOString(), // reloj del SERVIDOR (T-37-03), nunca el del cliente
+    endedAt: null,
+    mode: sanitized.mode,
+    hoyFilter: sanitized.hoyFilter,
+    filtro: sanitized.filtro,
+    queueSize: sanitized.queueSize,
+    processed: 0,
+    mood: '',
+    closedBy: '',
+    counters: null,
+  };
+  data.dialSessions.push(session);
+  data.dialSessions = _dialSessionPrune(data.dialSessions, actor.setterId);
+  saveSettersData(data);
+  res.json({ session });
+});
+
+// Cerrar sesión. Handler 100% SYNC.
+app.post('/api/setters/dial-sessions/:id/close', requireAuth, (req, res) => {
+  const actor = _dialSessionActor(req);
+  if (actor.error === 'rol') return res.status(403).json({ error: 'No autorizado.' });
+  if (actor.error === 'sin_setter') {
+    return res.status(400).json({ error: 'Tu cuenta no tiene un SDR vinculado: no se puede registrar la sesión de discado.' });
+  }
+  const data = loadSettersData();
+  if (!Array.isArray(data.dialSessions)) data.dialSessions = [];
+  // Buscar por id Y setterId del actor en el MISMO find (T-37-01) — nunca por
+  // id suelto: la sesión de otro SDR no existe para este request.
+  const session = data.dialSessions.find((s) => s.id === req.params.id && s.setterId === actor.setterId);
+  if (!session) return res.status(404).json({ error: 'Sesión no encontrada.' });
+
+  if (session.endedAt) {
+    // Idempotencia (T-37-07): dos pestañas o un reintento de red no pueden
+    // reescribir el resultado ya mostrado.
+    return res.json({ session, previous: _dialSessionPrevious(data, session), alreadyClosed: true });
+  }
+
+  const now = Date.now();
+  _dialSessionFinalize(data, session, { closedBy: 'user', endTs: now, processed: req.body?.processed });
+  const previous = _dialSessionPrevious(data, session);
+  saveSettersData(data);
+  res.json({ session, previous });
+});
+
+globalThis.__dialSessions = { _dialSessionSanitize, _dialSessionCounters, _dialSessionPrune, _dialSessionFinalize };
+
 app.get('/api/setters/team/:id/calls-today', requireAuth, (req, res) => {
   const setterId = req.params.id;
   const role = req.auth?.user?.role;
