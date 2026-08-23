@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-23T16:30:00.000Z"
+last_updated: "2026-08-23T16:39:00.000Z"
 last_activity: 2026-08-23
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 36
-  completed_plans: 33
-  percent: 92
+  completed_plans: 34
+  percent: 94
 ---
 
 # SCM — STATE
@@ -47,7 +47,7 @@ Phase: 37 (ses-sesion-discado) — EXECUTING
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
   scope de este executor.
-Plan: 1 of 4
+Plan: 2 of 4
   `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
   `35-04-SUMMARY.md`). 36-01, 36-02 y 36-03 EXECUTED (ver detalle abajo).
   **Fase 36 (DISP) COMPLETA (3/3 planes).**
@@ -185,9 +185,49 @@ Status: Executing Phase 37
   37-01-PLAN.md tildado). Queda para 37-02: lectura + estado del operador
   (mood). 37-03 (frontend, Power Dialer) todavia NO abre ni cierra ninguna
   sesion -- los endpoints existen sin consumidor.
-Last activity: 2026-08-23 -- Phase 37 Plan 1 (SES-01/SES-05, modelo
-  dialSessions backend) completado. Siguiente: Phase 37 Plan 2
-  (SES-03/SES-04 -- historial + estado del operador).
+  37-02 EXECUTED (2026-08-23, SES-03/SES-04 -- historial de sesiones +
+  estado del operador, backend puro): `GET /api/setters/dial-sessions`
+  insertado inmediatamente despues del cierre de 37-01, con el MISMO patron
+  de scope que `cold-call-metrics` (`getEffectiveAuth` + `_visibleSetterIds`,
+  NO el patron legacy de `/api/setters/sessions` que ignora `visibleSet`):
+  un `setter` solo lee lo suyo aunque mande `?setter=` de otro, admin/
+  supervisor leen `req.query.setter`, supervisor scoped sin query ve solo
+  las sesiones de su `visibleSet` y con `?setter=` fuera de ese set recibe
+  403. `limit` clampeado a 100 (T-37-11). Filtro de ruido de PRESENTACION
+  (no borrado): por defecto se esconden sesiones cerradas con
+  `counters.dials===0 && durationS<120` -- una sesion con 0 marcadas pero
+  >=120s de duracion NO es ruido y se lista igual (verificado con test
+  dedicado al borde); `all=1` trae todo. Sesiones ABIERTAS (`!endedAt`)
+  siempre se listan, nunca cuentan como ruido. A proposito el GET NO agrega
+  ningun total por dia (razonamiento documentado en comentario largo +
+  test `expect(body.totals).toBeUndefined()` para que la decision quede
+  clavada en codigo). `PATCH /api/setters/dial-sessions/:id` guarda `mood`
+  (whitelist `DIAL_SESSION_MOODS`: bien/normal/costo/pesimo, `''` borra y
+  nunca bloquea el cierre segun D-03 del CONTEXT) + `moodAt` (ISO, puesto
+  por el servidor); IDOR cerrado buscando por `id` Y `setterId` del actor
+  en el MISMO `.find()` (T-37-09); permitido tanto en sesion abierta como
+  cerrada. `_dialSessionActor` de 37-01 reusado tal cual (setterId SIEMPRE
+  real, nunca impersonado). 22 tests nuevos en
+  `tests/dial-session-history.test.js` (>=15 pedidos), verificados por
+  mutacion (2 rondas: romper el guard IDOR del PATCH y romper el filtro
+  `visibleSet` del GET tumban exactamente el test esperado y ningun otro,
+  restaurado con backup + `git diff --stat` vacio confirmado).
+  `tests/dial-session-model.test.js` y `tests/metrics-consistency.test.js`
+  sin editar (diff vacio), ambas verdes. Suite completa 122/122 archivos,
+  2176/2176 tests (baseline pre-plan real 121/2154), 0 regresiones, 2
+  corridas limpias. `git diff --stat package.json package-lock.json` vacio.
+  Detalle en `37-02-SUMMARY.md`. Commits: `ae38f65` (feat), `f5fc177`
+  (test). SES-03/SES-04 cerrados (REQUIREMENTS.md marcado [x] los 2, queda
+  SES-02 para 37-03). ROADMAP.md actualizado a mano (Phase 37 fila
+  `## Progress` -> 2/4 Executing, checkbox 37-02-PLAN.md tildado). Queda
+  para 37-03: ciclo de vida de la sesion en `_pdStart`/`_pdExit`
+  (public/app.js), pantalla de cierre UNICA y chips de estado -- el
+  frontend TODAVIA no consume ninguno de los 4 endpoints de `dialSessions`
+  (abrir/cerrar de 37-01, historial/mood de 37-02).
+Last activity: 2026-08-23 -- Phase 37 Plan 2 (SES-03/SES-04, historial +
+  estado del operador backend) completado. Siguiente: Phase 37 Plan 3
+  (SES-02/SES-04 -- ciclo de vida de la sesion en el Power Dialer,
+  frontend).
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 

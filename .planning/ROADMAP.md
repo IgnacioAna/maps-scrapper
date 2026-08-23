@@ -601,7 +601,7 @@ Plans:
 
 **Wave 2** *(depende de 37-01)*
 
-- [ ] 37-02-PLAN.md — SES-03/SES-04 (backend): `GET /dial-sessions` (historial con RBAC por scope) + `PATCH /dial-sessions/:id` (estado del que marcó)
+- [x] 37-02-PLAN.md — SES-03/SES-04 (backend): `GET /dial-sessions` (historial con RBAC por scope) + `PATCH /dial-sessions/:id` (estado del que marcó) (completed 2026-08-23, 37-02-SUMMARY.md — scope idéntico a cold-call-metrics, filtro de ruido de presentación (0 marcadas y <120s), sin total diario paralelo, IDOR cerrado en el PATCH, 22 tests nuevos verificados por mutación, suite completa 2176/2176 baseline 2154/2154)
 
 **Wave 3** *(depende de 37-01 y 37-02)*
 
@@ -628,7 +628,7 @@ Plans:
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
 | 35. SCR — Atribución de guion | 4/4 | human_needed (UAT pendiente) | 2026-08-22 |
 | 36. DISP — La disposición responde | 3/3 | Complete | 2026-08-23 |
-| 37. SES — La sesión de discado como partida | 1/4 | Executing | — |
+| 37. SES — La sesión de discado como partida | 2/4 | Executing | — |
 
 
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)

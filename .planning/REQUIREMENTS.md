@@ -419,9 +419,21 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   de huérfanas anclado a la última llamada real. Ver
   `.planning/phases/37-ses-sesion-discado/37-01-SUMMARY.md`.
 - [ ] **SES-02**: Siempre hay pantalla de cierre, no solo al vaciar la cola.
-- [ ] **SES-03**: Existe historial de sesiones (la de hoy contra la de ayer).
-- [ ] **SES-04**: Al cerrar se hace una sola pregunta sobre el estado del que
-  marcó, opcional de responder y nunca por llamada.
+- [x] **SES-03**: Existe historial de sesiones (la de hoy contra la de ayer). —
+  Completo en 37-02: `GET /api/setters/dial-sessions`, mismo patrón de scope
+  que `cold-call-metrics` (setter propio, supervisor scoped vía
+  `visibleSet`, admin sin restricción), orden `startedAt` descendente,
+  `limit` clampeado a 100, filtro de ruido de presentación (0 marcadas y
+  <120s excluidas por defecto, `all=1` las trae, sesiones abiertas siempre
+  visibles), sin total diario paralelo al de Mi rendimiento (decisión
+  clavada en comentario + test). Ver
+  `.planning/phases/37-ses-sesion-discado/37-02-SUMMARY.md`.
+- [x] **SES-04**: Al cerrar se hace una sola pregunta sobre el estado del que
+  marcó, opcional de responder y nunca por llamada. — Completo en 37-02:
+  `PATCH /api/setters/dial-sessions/:id`, whitelist `DIAL_SESSION_MOODS`
+  (`bien/normal/costo/pesimo`), `''` borra y nunca bloquea el cierre, IDOR
+  cerrado por `id`+`setterId` del actor en el mismo `.find()`. Ver
+  `.planning/phases/37-ses-sesion-discado/37-02-SUMMARY.md`.
 - [x] **SES-05**: Los contadores derivan del CALL METRICS CORE, no se
   re-implementan inline. `tests/metrics-consistency.test.js` sigue verde. —
   Completo en 37-01: `_dialSessionCounters` es el único lugar que calcula
