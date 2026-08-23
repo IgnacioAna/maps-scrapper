@@ -6951,6 +6951,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       // para adivinarlo (la heurística vieja que este plan elimina, ver
       // window._pdHandleDisposition). Shape: { leadId, outcome, at }.
       pendingSave: null,
+      // Fase 37, plan 03 (SES-02): true mientras se ve la pantalla de cierre
+      // de la sesión. _pdRender/_pdAdvance/el handler de teclado la
+      // respetan: ya no hay tarjeta abajo, nada tiene que actuar sobre un
+      // lead.
+      closing: false,
+    };
+    // Fase 37, plan 03 (SES-02): ciclo de vida de la sesión de discado del
+    // servidor (abrir/cerrar, modelo de la pantalla de cierre). Separado de
+    // `_pd` a propósito: `_pd` se resetea entero en `_pdStart` y varias
+    // suites cuentan literales sobre él (D-02/D-07) — mezclar el estado de
+    // sesión ahí hubiera roto esas cuentas.
+    const _pdSession = {
+      id: null,
+      startedAt: null,
+      opening: null,   // promesa del POST de apertura — fire-and-forget, nunca bloquea abrir el dialer
+      closing: false,
+      payload: null,   // último payload devuelto por el cierre (session/previous/error), para repintar el mood sin re-pedirlo
+      error: false,
     };
     // Teléfono visible COMPLETO para todos los roles (2026-07-23): los SDRs
     // necesitan copiar el número para mandar mensajes desde el celular.
@@ -7199,6 +7217,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       _pd.processed = 0;
       _pd.active = true;
+      // Fase 37 (SES-01): abrir el dialer y abrir la sesión de discado del
+      // servidor son lo mismo — se llama DESPUÉS de todos los early-return
+      // de arriba (cola vacía / "no hay leads cargados"), fire-and-forget
+      // (_pdSessionOpen nunca bloquea ni muestra error acá).
+      _pd.closing = false;
+      _pdSession.id = null;
+      _pdSession.startedAt = null;
+      _pdSession.opening = null;
+      _pdSession.closing = false;
+      _pdSession.payload = null;
+      _pdSession.error = false;
+      _pdSessionOpen();
       _pd.autopilot = localStorage.getItem(_pdAutopilotKey()) === '1';
       _pd.autopilotArmed = false; // no auto-discar el primer lead al abrir
       _pd.holdCurrent = false;
@@ -7286,15 +7316,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       _pdRender();
     };
-    window._pdExit = function() {
-      // Sprint 37 (BUG-A2): si hay una llamada Telnyx activa, pedir confirm
-      // antes de salir — sino la llamada queda "huérfana" sin panel visible.
-      if (_telnyx?.activeCall) {
-        if (!confirm('Hay una llamada activa. ¿Salir del power dialer? La llamada se va a colgar.')) return;
-        try { _telnyx.activeCall.hangup?.(); } catch {}
-      }
+    // Fase 37, plan 03 (SES-02): la salida real en dos fases. La primera
+    // llamada a window._pdExit (botón, Esc, click en el sidebar) SIEMPRE
+    // muestra la pantalla de cierre de la sesión y NO esconde el panel
+    // todavía; la segunda (mismo botón, Esc de nuevo, o un segundo click en
+    // el sidebar mientras el panel sigue abierto) es la que cierra de
+    // verdad. Con cola vacía o con 300 leads sin tocar, el resultado es el
+    // mismo: siempre hay pantalla de cierre.
+    function _pdExitFinal() {
       _pdCancelAutopilot();
       _pd.active = false;
+      _pd.closing = false;
+      _pdSession.id = null;
+      _pdSession.startedAt = null;
+      _pdSession.opening = null;
+      _pdSession.closing = false;
+      _pdSession.payload = null;
+      _pdSession.error = false;
       document.getElementById('power-dialer').style.display = 'none';
       document.body.style.overflow = '';
       // Refrescar la vista de origen para que se actualicen los counts.
@@ -7303,7 +7341,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       // de la sesión de discado completa, y ahí sí conviene volver a
       // preguntarle al server (puede haber pasado bastante entre el primer
       // lead y el último).
+      // Caso navegación por el sidebar (37-03): con la pantalla de cierre
+      // encima, la vista de atrás ya cambió mientras el SDR la miraba — el
+      // delegate de abajo dispara ESTA función en el segundo click, que solo
+      // esconde el panel; la vista nueva que el sidebar ya mostró queda al
+      // descubierto sola, sin que este código tenga que saber a cuál se
+      // navegó.
       if (_pd.mode === 'hoy') loadHoyView(); else loadCallsView();
+    }
+    window._pdExit = function() {
+      // Sprint 37 (BUG-A2): si hay una llamada Telnyx activa, pedir confirm
+      // antes de salir — sino la llamada queda "huérfana" sin panel visible.
+      if (_telnyx?.activeCall) {
+        if (!confirm('Hay una llamada activa. ¿Salir del power dialer? La llamada se va a colgar.')) return;
+        try { _telnyx.activeCall.hangup?.(); } catch {}
+      }
+      if (!_pd.closing) {
+        _pdShowClosing('salida');
+        return;
+      }
+      _pdExitFinal();
     };
     // Audit fix Sprint 36 + 37 (HOTSPOT-8): event delegation en lugar de
     // attachar listener por cada menu-item. Previene listener leak si el
@@ -7490,7 +7547,220 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── [37-03] SESSION-PURE: FIN ───
     window.__ses = { _sesDurationLabel, _sesClosingModel };
 
+    // Arma el filtro con el que se armó la cola actual, para persistirlo
+    // junto con la sesión. Si un select no está en el DOM (otra vista, otro
+    // modo), su clave se omite — el servidor sanitiza igual.
+    function _pdCurrentFilters() {
+      const filtro = {};
+      if (_pd.mode === 'hoy') {
+        filtro.seccion = _pd.hoyFilter || 'todas';
+        const hc = document.getElementById('hoy-country-filter');
+        if (hc) filtro.pais = hc.value || '';
+      } else {
+        const cc = document.getElementById('calls-country-filter');
+        if (cc) filtro.pais = cc.value || '';
+        const cs = document.getElementById('calls-sort-select');
+        if (cs) filtro.orden = cs.value || '';
+        const ss = document.getElementById('calls-setter-select');
+        if (ss) filtro.setter = ss.value || '';
+        // El texto de la búsqueda NO se manda (es dato del lead, no del
+        // filtro) — solo si estaba activa.
+        const sq = document.getElementById('calls-search');
+        filtro.busqueda = (sq && sq.value && sq.value.trim()) ? '1' : '';
+      }
+      return filtro;
+    }
+
+    // Abre la sesión de discado en el servidor. Fire-and-forget A PROPÓSITO
+    // (SES-01): nunca bloquea la apertura del dialer ni muestra error al
+    // SDR — un dialer que no abre es un día perdido, una sesión sin
+    // registrar es "solo" un dato perdido. Usa apiUrl() (nunca fetch crudo,
+    // reglas #135/#146 de CLAUDE.md: respeta el viewAs de impersonación).
+    function _pdSessionOpen() {
+      const body = {
+        mode: _pd.mode,
+        hoyFilter: _pd.hoyFilter,
+        filtro: _pdCurrentFilters(),
+        queueSize: _pd.queue.length,
+      };
+      const p = fetch(apiUrl('/api/setters/dial-sessions'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then((r) => { if (!r.ok) throw new Error('status ' + r.status); return r.json(); })
+        .then((d) => {
+          if (d && d.session && d.session.id) {
+            _pdSession.id = d.session.id;
+            _pdSession.startedAt = d.session.startedAt;
+          } else {
+            _pdSession.error = true;
+          }
+          return d;
+        })
+        .catch((e) => {
+          _pdSession.error = true;
+          console.warn('[ses] no se pudo abrir la sesión de discado:', e?.message);
+        });
+      _pdSession.opening = p;
+      return p;
+    }
+
+    // Cierra la sesión de discado en el servidor. Nunca deja al SDR
+    // encerrado: cualquier falla (sin id, red caída, respuesta no-ok)
+    // devuelve { error:true } en vez de tirar, y quien llama (_pdShowClosing)
+    // ya pintó un botón Salir funcional ANTES de invocar esto.
+    async function _pdSessionClose({ reason } = {}) {
+      // Si la apertura sigue en vuelo, esperarla — sin id no hay a qué
+      // cerrar. _pdSessionOpen nunca rechaza (atrapa su propio error), así
+      // que este await no necesita try/catch.
+      await _pdSession.opening;
+      if (!_pdSession.id) return { error: true };
+      // Gracia de 250ms antes del POST de cierre: la disposición que el SDR
+      // acaba de marcar puede estar todavía en vuelo (el fetch de la
+      // disposición es async, y un SDR rápido puede pedir salir una fracción
+      // de segundo después de apretar la tecla), y el servidor calcula los
+      // contadores de la sesión con SU reloj al recibir este POST — 250ms
+      // alcanzan para que esa marca ya esté persistida y entre en el
+      // resumen. Imperceptible en una pantalla que el usuario acaba de
+      // pedir. Límite conocido: si la disposición tarda MÁS de 250ms en
+      // persistir, esa marca queda afuera del resumen de ESTA sesión (el
+      // número canónico del día sigue siendo el de Mi rendimiento).
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      try {
+        const r = await fetch(apiUrl(`/api/setters/dial-sessions/${_pdSession.id}/close`), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ processed: _pd.processed }),
+        });
+        if (!r.ok) throw new Error('status ' + r.status);
+        return await r.json();
+      } catch (e) {
+        console.warn('[ses] no se pudo cerrar la sesión de discado:', e?.message);
+        return { error: true };
+      }
+    }
+
+    // Modelo actual de la pantalla de cierre — repintado por
+    // _pdRenderClosingScreen tras el POST de cierre y de nuevo cuando se
+    // toca un chip de estado (window._pdSessionMood).
+    let _pdClosingModel = null;
+
+    // Único renderizador del contenido de #pd-current-content mientras
+    // _pd.closing es true. Usa _pdClosingModel (ya calculado por
+    // _pdShowClosing) — no vuelve a tocar red.
+    function _pdRenderClosingScreen() {
+      const model = _pdClosingModel;
+      const contentEl = document.getElementById('pd-current-content');
+      if (!contentEl || !model) return;
+      const icon = model.title === '¡Cola completa!' ? '🎉' : '🏁';
+      const secondaryHTML = model.secondary.map((s) => `
+        <div style="text-align:center; min-width:78px;">
+          <div style="font-size:20px; font-weight:700; color:var(--text-primary);">${s.value}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:.4px; margin-top:2px;">${escHtml(s.label)}</div>
+        </div>`).join('');
+      const breakdownHTML = model.breakdown.length ? `
+        <div style="margin:20px auto 0; text-align:left; max-width:320px;">
+          ${model.breakdown.map((b) => `
+            <div style="display:flex; justify-content:space-between; gap:12px; padding:5px 0; font-size:12px; color:var(--text-secondary); border-bottom:1px solid var(--border-subtle, rgba(255,255,255,0.08));">
+              <span>${escHtml(callOutcomeLabel(b.outcome))}</span>
+              <span style="font-weight:700; color:var(--text-primary);">${b.n}</span>
+            </div>`).join('')}
+        </div>` : '';
+      const comparisonHTML = model.comparison ? `
+        <p style="font-size:12px; color:var(--text-tertiary); margin:16px 0 0;">
+          vs tu sesión anterior (${escHtml(model.comparison.when ? new Date(model.comparison.when).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '')}):
+          ${model.comparison.prevDials} marcadas (${model.comparison.diff > 0 ? '+' : ''}${model.comparison.diff})
+        </p>` : '';
+      const moodOptions = [['bien', 'Bien'], ['normal', 'Normal'], ['costo', 'Me costó'], ['pesimo', 'Pésima']];
+      const moodHTML = model.canMood ? `
+        <div style="margin-top:24px;">
+          <p style="font-size:12px; color:var(--text-secondary); margin:0 0 8px;">¿Cómo la remaste?</p>
+          <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+            ${moodOptions.map(([id, label]) => {
+              const sel = model.mood === id;
+              return `<button type="button" data-mood="${id}" onclick="window._pdSessionMood('${id}')"
+                style="padding:7px 14px; border-radius:8px; font-size:12px; cursor:pointer;
+                border:1px solid ${sel ? 'var(--accent)' : 'var(--border-default, rgba(255,255,255,0.15))'};
+                background:${sel ? 'var(--accent-soft, rgba(157,133,242,0.16))' : 'transparent'};
+                color:${sel ? 'var(--accent)' : 'var(--text-secondary)'};">${label}</button>`;
+            }).join('')}
+          </div>
+        </div>` : '';
+      const noteHTML = (model.degraded && model.note) ? `<p style="font-size:11px; color:var(--text-tertiary); margin:16px auto 0; max-width:340px;">${escHtml(model.note)}</p>` : '';
+
+      contentEl.innerHTML = `<div style="text-align:center; padding:40px 20px;">
+        <div style="font-size:44px; margin-bottom:10px;">${icon}</div>
+        <h2 style="margin:0 0 6px;">${escHtml(model.title)}</h2>
+        <div style="font-size:54px; font-weight:800; color:var(--accent); line-height:1; margin:16px 0 2px;">${model.big.value}</div>
+        <div style="font-size:14px; color:var(--text-secondary); font-weight:600;">${escHtml(model.big.label)}</div>
+        ${model.big.sub ? `<div style="font-size:12px; color:var(--text-tertiary); margin-top:4px;">${escHtml(model.big.sub)}</div>` : ''}
+        <div style="display:flex; gap:26px; justify-content:center; margin-top:24px;">${secondaryHTML}</div>
+        ${breakdownHTML}
+        ${comparisonHTML}
+        ${moodHTML}
+        ${noteHTML}
+        <button type="button" onclick="window._pdExit()" class="btn-primary pill-btn" style="margin-top:28px;">Salir</button>
+      </div>`;
+    }
+
+    // Único camino a la pantalla de cierre (SES-02). `reason` ∈ 'salida' |
+    // 'cola_completa' — el título cambia, todo lo demás es el mismo modelo.
+    // Pinta un estado "calculando" con un botón Salir YA funcional en el
+    // primer frame (T-37-13: el SDR nunca espera a la red para poder irse),
+    // y recién después de cerrar la sesión en el servidor pinta el modelo
+    // final.
+    async function _pdShowClosing(reason) {
+      _pd.closing = true;
+      _pdSession.closing = true;
+      _pdCancelAutopilot();
+      const q = document.getElementById('pd-queue');
+      if (q) q.innerHTML = '';
+      const prog = document.getElementById('pd-progress');
+      if (prog) prog.textContent = 'sesión cerrada';
+      const contentEl = document.getElementById('pd-current-content');
+      const calcTitle = reason === 'cola_completa' ? '¡Cola completa!' : 'Sesión terminada';
+      if (contentEl) {
+        contentEl.innerHTML = `<div style="text-align:center; padding:40px 20px;">
+          <div style="font-size:44px; margin-bottom:14px;">${reason === 'cola_completa' ? '🎉' : '🏁'}</div>
+          <h2 style="margin:0 0 8px;">${escHtml(calcTitle)}</h2>
+          <p style="color:var(--text-secondary); margin:0 0 24px;">Calculando el resumen de la sesión…</p>
+          <button type="button" onclick="window._pdExit()" class="btn-primary pill-btn">Salir</button>
+        </div>`;
+      }
+      const payload = await _pdSessionClose({ reason });
+      _pdSession.payload = payload;
+      _pdSession.error = !!(payload && payload.error);
+      _pdClosingModel = _sesClosingModel(payload, { processedLocal: _pd.processed, reason });
+      _pdRenderClosingScreen();
+    }
+
+    // Estado del que marcó (SES-04, D-03): opcional, se ofrece una sola vez
+    // al cierre. Si falla, un toast discreto y nada más — NUNCA puede
+    // impedir salir (la sesión ya quedó cerrada por el POST de _pdShowClosing).
+    window._pdSessionMood = async function(mood) {
+      if (!_pdSession.id) return;
+      try {
+        const r = await fetch(apiUrl(`/api/setters/dial-sessions/${_pdSession.id}`), {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mood }),
+        });
+        if (!r.ok) throw new Error('status ' + r.status);
+        if (_pdClosingModel) _pdClosingModel.mood = mood;
+        _pdRenderClosingScreen();
+        window.showToast?.('Estado guardado', { type: 'success', duration: 1800 });
+      } catch (e) {
+        console.warn('[ses] no se pudo guardar el estado del que marcó:', e?.message);
+        window.showToast?.('No se pudo guardar el estado (no afecta el cierre)', { type: 'warning', duration: 2800 });
+      }
+    };
+
     function _pdAdvance() {
+      if (_pd.closing) return; // Fase 37 (SES-02): ya no hay tarjeta, nada que avanzar
       _pdCancelAutopilot();
       _clearCallStage(); // la etapa pertenece al lead que se deja atrás
       _pd.holdCurrent = false;
@@ -7501,15 +7771,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.currentIdx++;
       _pd.processed++;
       if (_pd.currentIdx >= _pd.queue.length) {
-        // Fin de cola
-        document.getElementById('pd-current-content').innerHTML = `<div style="text-align:center; padding:40px 20px;">
-          <div style="font-size:48px; margin-bottom:18px;">🎉</div>
-          <h2 style="margin:0 0 8px;">¡Cola completa!</h2>
-          <p style="color:var(--text-secondary); margin:0 0 24px;">Procesaste ${_pd.processed} leads en esta sesión.</p>
-          <button onclick="window._pdExit()" class="btn-primary pill-btn">Salir</button>
-        </div>`;
-        document.getElementById('pd-queue').innerHTML = '';
-        document.getElementById('pd-progress').textContent = `${_pd.processed} procesadas · completado`;
+        // Fin de cola (SES-02): misma pantalla de cierre que la salida
+        // manual — antes esto era un HTML propio y separado que solo
+        // avisaba cuántos leads se pasaron, sin desglose comercial.
+        // _pdShowClosing es async y no se espera acá a propósito: pinta su
+        // propio estado "calculando" en el primer frame.
+        _pdShowClosing('cola_completa');
         return;
       }
       _pdRender();
@@ -7546,6 +7813,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return true;
     }
     function _pdRender() {
+      if (_pd.closing) return; // Fase 37 (SES-02): la pantalla de cierre es la única dueña de #pd-current-content
       _pdCancelAutopilot(); // limpiar countdown previo antes de re-renderizar
       _pdRenderToday();
       const currentId = _pd.queue[_pd.currentIdx];
@@ -8243,6 +8511,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Shortcuts globales para power dialer
     document.addEventListener('keydown', (e) => {
       if (!_pd.active) return;
+      // Fase 37 (SES-02): en la pantalla de cierre ya no hay tarjeta abajo —
+      // 1-9 no pueden marcar un resultado sobre el último lead, y el resto
+      // de los atajos (llamar/saltar/volver/autopiloto/nota) tampoco tienen
+      // nada sobre qué actuar. Los atajos NO cambian de significado ni se
+      // agregan teclas nuevas (non-goal de la fase): solo se los limita a
+      // cuando hay tarjeta. Esc sigue funcionando y hace la salida real.
+      if (_pd.closing && e.key !== 'Escape') return;
       // Ignorar si está tipeando en input/textarea/select (excepto Escape)
       const typing = e.target?.matches?.('input,textarea,select');
       if (e.key === 'Escape') { if (_pd.autopilotTimer) { _pdCancelAutopilot(); } else { window._pdExit(); } return; }
