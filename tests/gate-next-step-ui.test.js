@@ -144,11 +144,14 @@ describe("Aserciones de fuente: cableado en public/app.js", () => {
     expect(body).toContain("openNextStepModal(leadId);");
   });
 
-  it("_pdHandleDisposition suma answered_interested a modalOpening y call-next-modal a modalIds", () => {
+  it("_pdHandleDisposition suma answered_interested a modalOpening y call-next-modal a la lista de modales de disposición", () => {
     const modalOpeningMatch = /const modalOpening = \[([^\]]*)\]/.exec(appJs);
     expect(modalOpeningMatch).toBeTruthy();
     expect(modalOpeningMatch[1]).toContain("'answered_interested'");
-    const modalIdsMatch = /const modalIds = \[([^\]]*)\]/.exec(appJs);
+    // Fase 38 (EDGE-01): el array local `modalIds` se extrajo a la constante
+    // compartida `_PD_DISPO_MODAL_IDS` (reusada también por el guard del
+    // handler de teclado) — mismo dato, mismo propósito, nueva ubicación.
+    const modalIdsMatch = /const _PD_DISPO_MODAL_IDS = \[([^\]]*)\]/.exec(appJs);
     expect(modalIdsMatch).toBeTruthy();
     expect(modalIdsMatch[1]).toContain("'call-next-modal'");
   });

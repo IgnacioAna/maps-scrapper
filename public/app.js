@@ -8412,6 +8412,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { window.showToast?.('Error de red borrando la nota', { type: 'error' }); }
     };
 
+    // Fase 38 (EDGE-01): lista única de los modales que puede abrir una
+    // disposición del dialer. Compartida por _pdHandleDisposition (esperar a
+    // que cierren antes de holdear) y por el guard del handler de teclado más
+    // abajo (con cualquiera de estos abierto, el dialer no debe reaccionar a
+    // NADA — evita una 2da disposición sobre el mismo lead o que S/B muevan
+    // la cola por debajo del modal).
+    const _PD_DISPO_MODAL_IDS = ['call-callback-modal','call-schedule-modal','call-objection-modal','call-next-modal'];
+    function _pdAnyDispoModalOpen() {
+      return _PD_DISPO_MODAL_IDS.some(id => {
+        const m = document.getElementById(id);
+        return m && !m.classList.contains('hidden');
+      });
+    }
+
     // Audit fix Sprint 36 (bug 1): handler de disposition específico al power
     // dialer. Para outcomes que ABREN modal (callback_later, scheduled_with_admin,
     // answered_not_interested, y desde Fase 30 answered_interested → "Próximo
@@ -8448,14 +8462,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Esperar a que se cierre el modal (si abrió uno) — chequear cada 400ms
       // hasta 60s. Si el SDR cierra sin guardar (cancel), no avanza.
       if (modalOpening) {
-        const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal','call-next-modal'];
         // Esperar hasta que TODOS los modales relevantes estén hidden (o cancelaron)
         let waited = 0;
         const check = () => {
-          const anyOpen = modalIds.some(id => {
-            const m = document.getElementById(id);
-            return m && !m.classList.contains('hidden');
-          });
+          const anyOpen = _pdAnyDispoModalOpen();
           if (anyOpen && waited < 60000) {
             waited += 400;
             setTimeout(check, 400);
@@ -8590,6 +8600,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       // agregan teclas nuevas (non-goal de la fase): solo se los limita a
       // cuando hay tarjeta. Esc sigue funcionando y hace la salida real.
       if (_pd.closing && e.key !== 'Escape') return;
+      // Fase 38 (EDGE-01): con un modal de disposición abierto (callback,
+      // agendar, objeción, próximo paso) el dialer no reacciona a NADA —
+      // Escape incluido: el modal maneja el suyo, y salir del dialer por
+      // debajo dejaría el modal huérfano sobre una cola ya movida.
+      if (_pdAnyDispoModalOpen()) return;
       // Ignorar si está tipeando en input/textarea/select (excepto Escape)
       const typing = e.target?.matches?.('input,textarea,select');
       if (e.key === 'Escape') { if (_pd.autopilotTimer) { _pdCancelAutopilot(); } else { window._pdExit(); } return; }

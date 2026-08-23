@@ -173,10 +173,13 @@ describe("Heurística stillActionable eliminada por completo", () => {
 });
 
 describe("Los 4 modales siguen siendo esperados por nombre de id", () => {
-  it("window._pdHandleDisposition sigue esperando a que los 4 ids de modal queden hidden", () => {
+  it("window._pdHandleDisposition sigue esperando a que los 4 ids de modal queden hidden (Fase 38, EDGE-01: ahora vía el helper compartido _pdAnyDispoModalOpen en vez de un array local)", () => {
     const body = extractFunctionBody(appJs, "window._pdHandleDisposition = async function(leadId, selectEl) {");
+    expect(body).toContain("const anyOpen = _pdAnyDispoModalOpen();");
+    const idsMatch = /const _PD_DISPO_MODAL_IDS = \[([^\]]*)\]/.exec(appJs);
+    expect(idsMatch).toBeTruthy();
     for (const id of ["call-callback-modal", "call-schedule-modal", "call-objection-modal", "call-next-modal"]) {
-      expect(body).toContain(id);
+      expect(idsMatch[1]).toContain(`'${id}'`);
     }
   });
 
