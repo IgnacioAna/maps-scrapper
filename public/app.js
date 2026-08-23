@@ -7374,6 +7374,122 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window._pdRenderToday = _pdRenderToday;
 
+    // ─── [37-03] SESSION-PURE: INICIO ───
+    // Fase 37, plan 03 (SES-02/SES-04): modelo puro de la pantalla de cierre
+    // del Power Dialer. D-01 manda la jerarquía visual: la victoria definida
+    // es MARCAR — el número grande es SIEMPRE `counters.dials`, sube aunque
+    // el resultado comercial haya sido cero. El desglose comercial
+    // (atendieron/conversaciones/agendadas) va abajo, nunca arriba. Bloque
+    // sin acceso al DOM, sin almacenamiento persistente, sin red y sin leer
+    // el reloj del sistema directamente: todo lo variable entra por
+    // parámetro, mismo patrón que [33-04] HISTORY-PURE / [31-03]
+    // COMMITMENT-PURE / [30-02] GATE-PURE / [32-03] ACT-PURE. A propósito NO
+    // se reusa el chip de meta diaria de más arriba en este archivo: ese
+    // helper tiene su PROPIA definición de conversación, cuenta solo sobre
+    // el caché de leads cargado en pantalla y corta el día con la medianoche
+    // del navegador local — está fuera de alcance por D-04 y no es el canon.
+    // Los números de la sesión vienen del servidor, derivados del CALL
+    // METRICS CORE (SES-05); acá solo se les da forma de pantalla.
+
+    // '0 min' / 'N min' / 'Xh MM' (minutos con 2 dígitos) — nunca NaN ni
+    // negativo, clampeado a 0.
+    function _sesDurationLabel(seconds) {
+      let s = Number(seconds);
+      if (!Number.isFinite(s) || s < 0) s = 0;
+      if (s < 60) return '0 min';
+      if (s < 3600) return `${Math.floor(s / 60)} min`;
+      const h = Math.floor(s / 3600);
+      const mm = Math.floor((s % 3600) / 60);
+      return `${h}h ${String(mm).padStart(2, '0')}`;
+    }
+
+    // El modelo completo de la pantalla de cierre. `payload` = { session,
+    // previous, error } tal cual lo devuelve el cierre del backend (37-01),
+    // más `opts` = { processedLocal, reason } con reason ∈ 'salida' |
+    // 'cola_completa'. Nunca tira: payload null/{}/{session:null} cae al
+    // modelo degradado.
+    function _sesClosingModel(payload, opts = {}) {
+      const reason = opts.reason === 'cola_completa' ? 'cola_completa' : 'salida';
+      const title = reason === 'cola_completa' ? '¡Cola completa!' : 'Sesión terminada';
+      let processedLocal = Number(opts.processedLocal);
+      if (!Number.isFinite(processedLocal) || processedLocal < 0) processedLocal = 0;
+
+      const p = (payload && typeof payload === 'object') ? payload : {};
+      const session = (p.session && typeof p.session === 'object') ? p.session : null;
+      const errored = !!p.error || !session;
+
+      if (errored) {
+        // El backend no respondió (o la sesión nunca se abrió): nunca se
+        // muestra un 0 de marcadas que sería mentira — se cae al contador
+        // local de leads pasados en ESTA pantalla, y se avisa que el
+        // resumen no quedó guardado. `canMood: false`: sin session.id no hay
+        // a qué colgarle el estado del operador.
+        return {
+          title,
+          big: { value: processedLocal, label: 'leads pasados', sub: '' },
+          secondary: [],
+          breakdown: [],
+          comparison: null,
+          canMood: false,
+          mood: '',
+          degraded: true,
+          note: 'No se pudo guardar el resumen de esta sesión — la jornada sigue igual, solo no quedó registrada.',
+        };
+      }
+
+      const counters = (session.counters && typeof session.counters === 'object') ? session.counters : {};
+      const dials = Number(counters.dials) || 0;
+      const connects = Number(counters.connects) || 0;
+      const conversations = Number(counters.conversations) || 0;
+      const appointments = Number(counters.appointments) || 0;
+      const leads = Number(counters.leads);
+
+      let sub = _sesDurationLabel(session.durationS);
+      if (Number.isFinite(leads) && leads !== dials) {
+        sub += ` · ${leads} lead${leads === 1 ? '' : 's'} distinto${leads === 1 ? '' : 's'}`;
+      }
+
+      // D-01, escrito en código: el número grande NUNCA es `connects` ni
+      // `processed` — es SIEMPRE `dials`.
+      const big = { value: dials, label: dials === 1 ? 'marcada' : 'marcadas', sub };
+
+      // Orden fijo (atendieron → conversaciones → agendadas), va ABAJO del
+      // número grande.
+      const secondary = [
+        { key: 'connects', label: 'Atendieron', value: connects },
+        { key: 'conversations', label: 'Conversaciones', value: conversations },
+        { key: 'appointments', label: 'Agendadas', value: appointments },
+      ];
+
+      // Tally sin etiquetas propias — las pone el render con
+      // `callOutcomeLabel` (mapa cerrado ya existente, no se duplica acá).
+      const byOutcome = (counters.byOutcome && typeof counters.byOutcome === 'object') ? counters.byOutcome : {};
+      const breakdown = Object.entries(byOutcome)
+        .map(([outcome, n]) => ({ outcome, n: Number(n) || 0 }))
+        .sort((a, b) => (b.n - a.n) || (a.outcome < b.outcome ? -1 : a.outcome > b.outcome ? 1 : 0));
+
+      const previous = (p.previous && typeof p.previous === 'object') ? p.previous : null;
+      let comparison = null;
+      if (previous && previous.counters) {
+        const prevDials = Number(previous.counters.dials) || 0;
+        comparison = { prevDials, diff: dials - prevDials, when: previous.startedAt || '' };
+      }
+
+      return {
+        title,
+        big,
+        secondary,
+        breakdown,
+        comparison,
+        canMood: !!session.id,
+        mood: session.mood || '',
+        degraded: false,
+        note: '',
+      };
+    }
+    // ─── [37-03] SESSION-PURE: FIN ───
+    window.__ses = { _sesDurationLabel, _sesClosingModel };
+
     function _pdAdvance() {
       _pdCancelAutopilot();
       _clearCallStage(); // la etapa pertenece al lead que se deja atrás
