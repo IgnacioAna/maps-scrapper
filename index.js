@@ -8526,6 +8526,16 @@ const DIAL_SESSION_MODES = new Set(['calls', 'hoy']);
 const DIAL_SESSION_HOY_FILTERS = new Set(['compromisos', 'esperando', 'callbacks', 'interesados', 'reintentos']);
 const DIAL_SESSION_CAP_PER_SETTER = 90; // poda: ~3 meses a una sesión por día
 const DIAL_SESSION_MAX_FILTER_KEYS = 8;
+// Whitelist del estado del que marcó (SES-04). Ids ASCII a propósito — las
+// etiquetas con acentos ("pésimo") son cosa del frontend (37-04), acá solo
+// se persiste el id.
+const DIAL_SESSION_MOODS = new Set(['bien', 'normal', 'costo', 'pesimo']);
+// GET /api/setters/dial-sessions: por defecto se esconden del historial las
+// partidas con 0 marcadas y menos de esto de duración — abrir el dialer y
+// arrepentirse no es una partida y llenaría la tabla de filas vacías. Es un
+// filtro de PRESENTACIÓN, no un borrado (el registro sigue en disco;
+// `all=1` lo trae igual).
+const DIAL_SESSION_NOISE_MAX_S = 120;
 
 // Quién es el dueño de la sesión que se escribe. `setterId` sale SIEMPRE de
 // `req.auth.user.setterId` — el setter REAL del usuario logueado, NUNCA
@@ -8719,7 +8729,93 @@ app.post('/api/setters/dial-sessions/:id/close', requireAuth, (req, res) => {
   res.json({ session, previous });
 });
 
-globalThis.__dialSessions = { _dialSessionSanitize, _dialSessionCounters, _dialSessionPrune, _dialSessionFinalize };
+// Historial de sesiones (SES-03, Fase 37 plan 02). Handler 100% SYNC. Scope
+// EXACTAMENTE con el patrón de `cold-call-metrics` (no el del
+// `/api/setters/sessions` legacy de arriba, que ignora `visibleSet`): un
+// `setter` solo lee lo suyo aunque mande `?setter=` de otro; `admin`/
+// `supervisor` leen `req.query.setter` si vino; sin `?setter=` un supervisor
+// scoped ve solo las sesiones de los setters de su `visibleSet` (T-37-08).
+//
+// A PROPÓSITO no agrega ningún total por día: sumar sesiones por jornada
+// crearía un segundo número de "hoy" que puede diferir del canónico de
+// `cold-call-metrics` (una llamada hecha desde la lista, fuera de toda
+// sesión, entra en el segundo y no en el primero). El día se lee en Mi
+// rendimiento; acá se leen partidas — no "completar" esto con un bucket
+// diario en un plan futuro.
+app.get('/api/setters/dial-sessions', requireAuth, (req, res) => {
+  const eff = getEffectiveAuth(req);
+  const requestedSetter = req.query.setter || '';
+  let setterId = '';
+  if (eff.role === 'setter') {
+    if (!eff.setterId) return res.status(403).json({ error: 'No autorizado.' });
+    setterId = eff.setterId;
+  } else if (eff.role === 'admin' || eff.role === 'supervisor') {
+    setterId = requestedSetter; // admin/supervisor puede pedir cualquiera; vacío = agregado del scope
+  } else {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+
+  // Phase 18: supervisor scoped — ?setter=<oculto> → 403; ?setter= vacío =
+  // solo sesiones de setters visibles.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && requestedSetter && !visibleSet.has(requestedSetter)) {
+    return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
+  }
+
+  let limit = Math.trunc(Number(req.query.limit));
+  if (!Number.isFinite(limit) || limit < 1) limit = 20;
+  if (limit > 100) limit = 100; // T-37-11: DoS por limit gigante
+  const includeNoise = req.query.all === '1';
+
+  const data = loadSettersData();
+  const all = Array.isArray(data.dialSessions) ? data.dialSessions : [];
+  let scoped = setterId ? all.filter((s) => s.setterId === setterId) : all;
+  if (!setterId && visibleSet) scoped = scoped.filter((s) => _setterIsVisible(s.setterId, visibleSet));
+
+  const filtered = includeNoise ? scoped : scoped.filter((s) => {
+    // Las sesiones ABIERTAS (sin endedAt, sin counters todavía) siempre se
+    // listan — que se vea que hay una en curso, nunca cuentan como ruido.
+    if (!s.endedAt) return true;
+    const dials = s.counters ? s.counters.dials : 0;
+    return !(dials === 0 && (s.durationS || 0) < DIAL_SESSION_NOISE_MAX_S);
+  });
+
+  const sorted = [...filtered].sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  res.json({ setterId: setterId || null, sessions: sorted.slice(0, limit), total: sorted.length });
+});
+
+// Estado del que marcó (SES-04, lado servidor). Handler 100% SYNC. Opcional
+// por diseño (D-03 del CONTEXT): `mood: ''` es un valor válido que BORRA el
+// campo, nunca es obligatorio. Se permite tanto en sesión abierta como
+// cerrada — el estado es de la partida, no del cierre, y la pantalla de
+// cierre (37-03) puede llegar a patchear una sesión que el auto-cierre ya
+// cerró. Este endpoint NO puede fallar el cierre de la sesión: si el SDR no
+// responde, no se llama y listo — la sesión ya quedó cerrada por el POST
+// .../close de más arriba.
+app.patch('/api/setters/dial-sessions/:id', requireAuth, (req, res) => {
+  const actor = _dialSessionActor(req);
+  if (actor.error === 'rol') return res.status(403).json({ error: 'No autorizado.' });
+  if (actor.error === 'sin_setter') {
+    return res.status(400).json({ error: 'Tu cuenta no tiene un SDR vinculado: no se puede registrar la sesión de discado.' });
+  }
+  const mood = req.body?.mood;
+  if (mood !== '' && (typeof mood !== 'string' || !DIAL_SESSION_MOODS.has(mood))) {
+    return res.status(400).json({ error: `mood inválido (debe ser uno de: ${[...DIAL_SESSION_MOODS].join(', ')}, o vacío).` });
+  }
+  const data = loadSettersData();
+  if (!Array.isArray(data.dialSessions)) data.dialSessions = [];
+  // Buscar por id Y setterId del actor en el MISMO find (T-37-09, IDOR) — la
+  // sesión de otro SDR no existe para este request.
+  const session = data.dialSessions.find((s) => s.id === req.params.id && s.setterId === actor.setterId);
+  if (!session) return res.status(404).json({ error: 'Sesión no encontrada.' });
+
+  session.mood = mood;
+  session.moodAt = mood ? new Date().toISOString() : '';
+  saveSettersData(data);
+  res.json({ session });
+});
+
+globalThis.__dialSessions = { _dialSessionSanitize, _dialSessionCounters, _dialSessionPrune, _dialSessionFinalize, DIAL_SESSION_MOODS };
 
 app.get('/api/setters/team/:id/calls-today', requireAuth, (req, res) => {
   const setterId = req.params.id;
