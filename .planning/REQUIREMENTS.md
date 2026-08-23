@@ -410,14 +410,26 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### SES — La sesión de discado como partida *(Phase 37)*
 
-- [ ] **SES-01**: Existe una entidad `dialSession` persistida con inicio,
-  fin, quién, modo, filtro, tamaño de cola y contadores por resultado.
+- [x] **SES-01**: Existe una entidad `dialSession` persistida con inicio,
+  fin, quién, modo, filtro, tamaño de cola y contadores por resultado. —
+  Completo en 37-01: `data.dialSessions` dentro de `setters.json`
+  (`startedAt/endedAt/by/setterId/mode/hoyFilter/filtro/queueSize/
+  processed/mood/closedBy/counters`), `POST /api/setters/dial-sessions`
+  (abrir) y `POST /api/setters/dial-sessions/:id/close` (cerrar), auto-cierre
+  de huérfanas anclado a la última llamada real. Ver
+  `.planning/phases/37-ses-sesion-discado/37-01-SUMMARY.md`.
 - [ ] **SES-02**: Siempre hay pantalla de cierre, no solo al vaciar la cola.
 - [ ] **SES-03**: Existe historial de sesiones (la de hoy contra la de ayer).
 - [ ] **SES-04**: Al cerrar se hace una sola pregunta sobre el estado del que
   marcó, opcional de responder y nunca por llamada.
-- [ ] **SES-05**: Los contadores derivan del CALL METRICS CORE, no se
-  re-implementan inline. `tests/metrics-consistency.test.js` sigue verde.
+- [x] **SES-05**: Los contadores derivan del CALL METRICS CORE, no se
+  re-implementan inline. `tests/metrics-consistency.test.js` sigue verde. —
+  Completo en 37-01: `_dialSessionCounters` es el único lugar que calcula
+  números de sesión, deriva todo de `_ccCollectCalls`/`_ccFunnelAggregate`
+  sobre `[startedAt, endTs)` filtrado por setter. Test dedicado que
+  recalcula independientemente contra `globalThis.__callCore` y compara
+  campo por campo (verificado por mutación). `tests/metrics-consistency.test.js`
+  sin editar (diff vacío), 18/18 verde.
 
 ---
 

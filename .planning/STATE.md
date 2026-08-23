@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-23T15:59:43.000Z"
+last_updated: "2026-08-23T16:30:00.000Z"
 last_activity: 2026-08-23
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 36
-  completed_plans: 32
-  percent: 89
+  completed_plans: 33
+  percent: 92
 ---
 
 # SCM — STATE
@@ -39,7 +39,7 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 36 (disp-disposicion-responde) — COMPLETE (3/3 planes, 2026-08-23)
+Phase: 37 (ses-sesion-discado) — EXECUTING
   2026-08-22). Milestone v4.0 (Phases 28-34) quedo completo a nivel de
   ejecucion (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
   (hoy-vista-diaria): COMPLETE" mas abajo). El orquestador arranco un
@@ -47,11 +47,11 @@ Phase: 36 (disp-disposicion-responde) — COMPLETE (3/3 planes, 2026-08-23)
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
   scope de este executor.
-Plan: 3 of 3
+Plan: 1 of 4
   `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
   `35-04-SUMMARY.md`). 36-01, 36-02 y 36-03 EXECUTED (ver detalle abajo).
   **Fase 36 (DISP) COMPLETA (3/3 planes).**
-Status: Phase 36 completa. Siguiente: Phase 37 (sin plan generado)
+Status: Executing Phase 37
   call-disposition + script-effectiveness) completo y verificado
   (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
   `35-01-SUMMARY.md`). 35-02 (siembra automatica del guion al iniciar la
@@ -152,11 +152,42 @@ Status: Phase 36 completa. Siguiente: Phase 37 (sin plan generado)
   cerrados (REQUIREMENTS.md marcado [x] los 3). ROADMAP.md actualizado a
   mano (Phase 36 fila `## Progress` -> 3/3 Complete 2026-08-23, checkbox
   36-03-PLAN.md tildado).
-Last activity: 2026-08-23 -- Phase 36 Plan 03 (RESP-03, pad DTMF
-  visible/persistente) ejecutado y verificado. **Fase 36 (DISP) COMPLETA
-  (3/3 planes).** Siguiente: Phase 37 (ses-sesion-discado) -- sin plan
-  generado todavia (requiere plan-phase; depende de Phases 33 y 35, ya
-  completas).
+  37-01 EXECUTED (2026-08-23, SES-01/SES-05 -- modelo dialSessions +
+  abrir/cerrar sesion, backend puro): `data.dialSessions` como key mas
+  dentro de `setters.json` (mismo patron que `hoyHygieneSnapshots` de la
+  Fase 34 -- cero archivo nuevo, cero wiring de export/pre-deploy/seed,
+  verificado leyendo el codigo de los 4 lugares de la regla #21: sobrevive
+  un redeploy de Railway sin cambios adicionales). `POST
+  /api/setters/dial-sessions` (abrir) y `POST
+  /api/setters/dial-sessions/:id/close` (cerrar), ambos 100% sync.
+  `_dialSessionActor`: `setterId` SIEMPRE de `req.auth.user.setterId` (el
+  usuario REAL, nunca el impersonado -- si no, una sesion abierta en modo
+  "Ver como SDR" quedaria con contadores en 0). `_dialSessionCounters` es
+  el UNICO lugar que calcula numeros de sesion, derivados 100% de
+  `_ccCollectCalls`/`_ccFunnelAggregate` (CALL METRICS CORE) sobre
+  `[startedAt, endTs)` filtrado por setter -- SES-05. Auto-cierre de
+  huerfanas anclado a la ULTIMA llamada real (no a la hora de reapertura,
+  para no inflar sesiones con horas muertas de pestaña abierta). Cierre
+  por `id` + `setterId` del actor en el mismo `.find()` (IDOR cerrado),
+  idempotente ante doble cierre. `data.sessions` legacy (era WhatsApp,
+  `/api/setters/sessions/start|end`, colgada de `view-crm` parkeada) NO se
+  toco ni se reuso. 22 tests nuevos en `tests/dial-session-model.test.js`,
+  verificados por mutacion (2 rondas: romper el guard IDOR y romper el
+  filtro de ventana de `_dialSessionCounters` tumban exactamente el test
+  esperado y ningun otro, restaurado con Edit, diff vacio confirmado).
+  Suite completa 121/121 archivos, 2154/2154 tests (baseline pre-plan real
+  120/2132), 0 regresiones, 2 corridas limpias. `tests/metrics-
+  consistency.test.js` sin editar (diff vacio), 18/18 verde. Detalle en
+  `37-01-SUMMARY.md`. Commits: `debde4e` (feat), `7c607e6` (test).
+  SES-01/SES-05 cerrados (REQUIREMENTS.md marcado [x] los 2, quedan
+  SES-02/SES-03/SES-04 para 37-02/37-03/37-04). ROADMAP.md actualizado a
+  mano (Phase 37 fila `## Progress` -> 1/4 Executing, checkbox
+  37-01-PLAN.md tildado). Queda para 37-02: lectura + estado del operador
+  (mood). 37-03 (frontend, Power Dialer) todavia NO abre ni cierra ninguna
+  sesion -- los endpoints existen sin consumidor.
+Last activity: 2026-08-23 -- Phase 37 Plan 1 (SES-01/SES-05, modelo
+  dialSessions backend) completado. Siguiente: Phase 37 Plan 2
+  (SES-03/SES-04 -- historial + estado del operador).
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 
@@ -645,7 +676,7 @@ modelo que v4.0 rediseña — integrarlo antes obligaría a rehacerlo.
   WR-01, meta consumida ante red caída WR-02, ghost ad-hoc y gate sin row
   WR-03, cancel race WR-04).
 
-- **Status:** Executing Phase 36
+- **Status:** Executing Phase 37
   todo lo automatizable verificado (endpoints, guard, bifurcación
   enteredActive||committedRemote, D-04 intacto por diff, suite
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada

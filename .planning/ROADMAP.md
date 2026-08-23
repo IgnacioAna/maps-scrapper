@@ -597,7 +597,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 37-01-PLAN.md — SES-01/SES-05 (backend): entidad `dialSessions` dentro de `setters.json` + abrir/cerrar sesión con contadores derivados del CALL METRICS CORE
+- [x] 37-01-PLAN.md — SES-01/SES-05 (backend): entidad `dialSessions` dentro de `setters.json` + abrir/cerrar sesión con contadores derivados del CALL METRICS CORE
 
 **Wave 2** *(depende de 37-01)*
 
@@ -628,7 +628,7 @@ Plans:
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
 | 35. SCR — Atribución de guion | 4/4 | human_needed (UAT pendiente) | 2026-08-22 |
 | 36. DISP — La disposición responde | 3/3 | Complete | 2026-08-23 |
-| 37. SES — La sesión de discado como partida | 0/4 | Planned | — |
+| 37. SES — La sesión de discado como partida | 1/4 | Executing | — |
 
 
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)
