@@ -11082,6 +11082,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // a la llamada correcta del callLog (_pickCallLogIdxForTranscript).
     const _MAX_PENDING_TRANSCRIBE = 3; // ~2MB de audio en el peor caso
     let _pendingTranscribes = []; // [{ leadId, setterBlob, leadBlob, callStartedAtIso, recMeta, timer }]
+    // [36-02] RESP-02: señal de "hay audio en camino para este lead". Se marca
+    // ANTES de llamar a _stopCallRecordingAndBuffer y se borra en su .finally
+    // (terminó buffereando algo o terminó sin dejar nada — las dos son un
+    // final). El flush la consume para esperar en background hasta 8s si el
+    // resultado se marca antes de que el buffereo termine — la espera del
+    // audio ya NO vive en el camino del POST de la disposición.
+    const _audioInFlight = new Map(); // leadId → ts de cuándo arrancó el buffereo
 
     // Saca UNA entrada de la cola (la consumida o la vencida).
     function _dropPendingTranscription(p) {
@@ -11168,7 +11175,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function _flushPendingTranscription(leadId, outcome) {
       // El MÁS VIEJO de ese lead: el SDR marca los resultados en el orden en que
       // hizo las llamadas, así que FIFO empareja bien cuando hay dos pendientes.
-      const pending = _pendingTranscribes.find((p) => p.leadId === leadId);
+      let pending = _pendingTranscribes.find((p) => p.leadId === leadId);
+      // [36-02] RESP-02: la espera al audio vive ACÁ, no en el camino del POST
+      // de la disposición. Esta función ya se llama fire-and-forget desde los
+      // 6 caminos de disposición (`.catch(e => console.warn(...))`), así que
+      // esperar adentro no bloquea absolutamente nada de la interfaz — el SDR
+      // ya vio el resultado guardado. Si el resultado se marca ANTES de que
+      // _stopCallRecordingAndBuffer termine de armar el audio, se espera en un
+      // loop acotado (200ms por vuelta, techo 8000ms) a que aparezca la
+      // entrada en la cola o a que el marcador se borre (buffereo terminado
+      // sin dejar audio — llamada muy corta o <5KB).
+      if (!pending && _audioInFlight.has(leadId)) {
+        const _t0 = Date.now();
+        while (Date.now() - _t0 < 8000) {
+          if (!_audioInFlight.has(leadId)) break;
+          pending = _pendingTranscribes.find((p) => p.leadId === leadId);
+          if (pending) break;
+          await new Promise((r) => setTimeout(r, 200));
+        }
+        if (!pending) pending = _pendingTranscribes.find((p) => p.leadId === leadId);
+      }
       if (!pending) return;
       _dropPendingTranscription(pending); // consumir el buffer pase lo que pase
       if (!_TRANSCRIBE_OUTCOMES.has(outcome)) {
@@ -12125,7 +12151,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // No bloquear el cierre del panel por esperar el stop de los recorders.
         // Pasar el callStartedAt para que el backend matchee el callLog correcto
         const callStartedAtIso = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
-        _stopCallRecordingAndBuffer(leadId, callStartedAtIso).catch(e => console.warn('[transcribe] buffer failed:', e?.message));
+        // [36-02] RESP-02: marcar ANTES de arrancar el buffereo — el flush lo
+        // consulta para saber si vale la pena esperar. Se borra en el .finally
+        // pase lo que pase (audio armado, error, o descartado por <5KB): "terminó
+        // sin dejar nada" también es un final.
+        _audioInFlight.set(leadId, Date.now());
+        _stopCallRecordingAndBuffer(leadId, callStartedAtIso)
+          .catch(e => console.warn('[transcribe] buffer failed:', e?.message))
+          .finally(() => _audioInFlight.delete(leadId));
       } else {
         // Limpieza si no transcribimos
         try { _setterRecorder?.stop(); } catch {}
