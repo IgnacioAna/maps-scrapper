@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-23T16:39:00.000Z"
+last_updated: "2026-08-23T17:10:00.000Z"
 last_activity: 2026-08-23
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 36
-  completed_plans: 34
-  percent: 94
+  completed_plans: 35
+  percent: 97
 ---
 
 # SCM — STATE
@@ -47,7 +47,7 @@ Phase: 37 (ses-sesion-discado) — EXECUTING
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
   scope de este executor.
-Plan: 2 of 4
+Plan: 3 of 4
   `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
   `35-04-SUMMARY.md`). 36-01, 36-02 y 36-03 EXECUTED (ver detalle abajo).
   **Fase 36 (DISP) COMPLETA (3/3 planes).**
@@ -224,10 +224,75 @@ Status: Executing Phase 37
   (public/app.js), pantalla de cierre UNICA y chips de estado -- el
   frontend TODAVIA no consume ninguno de los 4 endpoints de `dialSessions`
   (abrir/cerrar de 37-01, historial/mood de 37-02).
-Last activity: 2026-08-23 -- Phase 37 Plan 2 (SES-03/SES-04, historial +
-  estado del operador backend) completado. Siguiente: Phase 37 Plan 3
-  (SES-02/SES-04 -- ciclo de vida de la sesion en el Power Dialer,
-  frontend).
+  37-03 EXECUTED (2026-08-23, SES-02/SES-04 -- ciclo de vida de la sesion
+  de discado en el Power Dialer + pantalla de cierre UNICA, frontend puro):
+  bloque `[37-03] SESSION-PURE` (`_sesDurationLabel`/`_sesClosingModel`,
+  sin document/localStorage/fetch/Date.now/window., expuesto en
+  `window.__ses`) es el modelo completo de la pantalla de cierre -- D-01
+  escrito en codigo: `big.value` es SIEMPRE `counters.dials`, nunca
+  `connects` ni `processed`, aunque el resultado comercial haya sido cero;
+  el desglose (`secondary`: atendieron/conversaciones/agendadas) va abajo.
+  `_pdSession` (id/startedAt/opening/closing/payload/error) separado de
+  `_pd` a proposito (varias suites cuentan literales sobre `_pd`).
+  `_pdSessionOpen()` abre la sesion al abrir el dialer (fire-and-forget,
+  DESPUES de todos los early-return de cola vacia, junto a
+  `_pd.active = true`) via `POST /api/setters/dial-sessions`.
+  `_pdSessionClose({reason})` espera la apertura, agrega 250ms de gracia
+  (la disposicion recien marcada puede seguir en vuelo cuando el server
+  calcula los contadores con SU reloj) y cierra via
+  `POST .../:id/close`; cualquier falla (sin id, red caida, respuesta
+  no-ok) devuelve `{error:true}` en vez de tirar. `_pdShowClosing(reason)`
+  es el UNICO renderizador de cierre: pinta un boton Salir YA funcional en
+  el primer frame (T-37-13, el SDR nunca espera a la red para poder irse)
+  y recien despues pinta el modelo real. `window._pdExit` pasa a 2 fases
+  (conservando el confirm de llamada activa BUG-A2 intacto y ANTES): la
+  primera llamada muestra `_pdShowClosing('salida')` y hace return (el
+  panel NO se esconde); la segunda (`_pd.closing` ya true) llama a
+  `_pdExitFinal()`, que tiene EXACTAMENTE el cuerpo viejo de `_pdExit`
+  (cancelar autopiloto, resetear `_pd`/`_pdSession`, esconder el panel, y
+  el refresh explicito de `loadHoyView()`/`loadCallsView()` que DIAL-03
+  documenta). El fin de cola de `_pdAdvance` reemplaza su HTML propio
+  ("Procesaste N leads", 0 desglose) por `_pdShowClosing('cola_completa')`
+  -- MISMA pantalla, solo cambia el titulo. Guards `if (_pd.closing) return;`
+  al inicio de `_pdRender`/`_pdAdvance`, y en el handler de teclado
+  `if (_pd.closing && e.key !== 'Escape') return;` (DESPUES de
+  `!_pd.active`, ANTES del bloque `1-9` -- Esc sigue funcionando, 1-9 no
+  pueden marcar sobre la pantalla de cierre). `window._pdSessionMood(mood)`
+  hace PATCH del estado del operador (4 chips bien/normal/costo/pesimo,
+  D-03: opcional, nunca bloquea la salida). `_pdHold`/autopiloto/atajos
+  1-9/`_pdBuildQueue`/`_pdBuildQueueHoy` intactos (git diff verificado que
+  no los toca). Cache-buster app.js `20260823a`->`20260823b`; style.css
+  SIN tocar (`20260822a`). 56 tests nuevos en
+  `tests/dial-session-close-ui.test.js` (>=20 pedidos): SESSION-PURE
+  evaluado con `new Function` contra reloj fijo, aserciones de fuente
+  sobre el unico renderizador de cierre y los 3 caminos de salida, guards,
+  regresion de `_pdKeyOutcomes`, cache-buster por forma. Deviation minima
+  (Rule 1): 1 assertion de `tests/dial-sync.test.js` (pre-existente, fuera
+  del scope de `files_modified` del plan) verificaba que
+  `loadHoyView()`/`loadCallsView()` vivieran DENTRO del cuerpo literal de
+  `window._pdExit` -- invariante que la propia Task 2 del plan invalida a
+  proposito (extraccion literal a `_pdExitFinal()`, pedida por el texto
+  del plan). Se actualizo esa UNA assertion para que chequee el nuevo
+  lugar (`_pdExitFinal`) preservando el comportamiento que protege (el
+  refresco explicito sigue ocurriendo al salir de verdad). Suite completa
+  123/123 archivos, 2232/2232 tests (baseline pre-plan real 122/2176), 0
+  regresiones. `git diff --stat package.json package-lock.json` vacio.
+  Verificacion en preview (browser real) NO se pudo hacer en esta sesion
+  -- sin herramienta de navegador expuesta al executor; se compenso con
+  las 56 aserciones de fuente + el bloque puro evaluado aislado, que
+  cubren cada criterio de aceptacion del plan uno por uno. Detalle en
+  `37-03-SUMMARY.md`. Commits: `a4dbfee` (feat, bloque puro), `2fff3d2`
+  (feat, cableado), `6d23171` (test). SES-02 cerrado (REQUIREMENTS.md
+  marcado [x], SES-04 ya estaba [x] desde 37-02 -- este plan completa su
+  mitad frontend). ROADMAP.md actualizado a mano (Phase 37 fila
+  `## Progress` -> 3/4 Executing, checkbox 37-03-PLAN.md tildado). Queda
+  para 37-04: tabla "Sesiones de discado" en Mi rendimiento (hoy contra
+  ayer, con la respuesta de estado a la vista) -- consume
+  `GET /api/setters/dial-sessions` de 37-02, sin sorpresas de shape.
+Last activity: 2026-08-23 -- Phase 37 Plan 3 (SES-02/SES-04, ciclo de vida
+  de la sesion en el Power Dialer + pantalla de cierre unica) completado.
+  Siguiente: Phase 37 Plan 4 (SES-03 -- tabla de historial de sesiones en
+  Mi rendimiento).
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 

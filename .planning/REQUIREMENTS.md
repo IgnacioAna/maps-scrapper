@@ -418,7 +418,15 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   (abrir) y `POST /api/setters/dial-sessions/:id/close` (cerrar), auto-cierre
   de huérfanas anclado a la última llamada real. Ver
   `.planning/phases/37-ses-sesion-discado/37-01-SUMMARY.md`.
-- [ ] **SES-02**: Siempre hay pantalla de cierre, no solo al vaciar la cola.
+- [x] **SES-02**: Siempre hay pantalla de cierre, no solo al vaciar la cola. —
+  Completo en 37-03: `window._pdExit` en dos fases (primera salida muestra
+  `_pdShowClosing`, segunda cierra de verdad vía `_pdExitFinal`), el fin de
+  cola de `_pdAdvance` usa la MISMA pantalla (`reason: 'cola_completa'`) en
+  vez de su HTML propio con "Procesaste N leads". D-01 escrito en código:
+  el número grande de `_sesClosingModel` es SIEMPRE `counters.dials`. Botón
+  Salir funcional desde el primer frame (T-37-13, nunca encierra al SDR si
+  el cierre falla). Ver
+  `.planning/phases/37-ses-sesion-discado/37-03-SUMMARY.md`.
 - [x] **SES-03**: Existe historial de sesiones (la de hoy contra la de ayer). —
   Completo en 37-02: `GET /api/setters/dial-sessions`, mismo patrón de scope
   que `cold-call-metrics` (setter propio, supervisor scoped vía

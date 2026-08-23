@@ -605,7 +605,7 @@ Plans:
 
 **Wave 3** *(depende de 37-01 y 37-02)*
 
-- [ ] 37-03-PLAN.md — SES-02/SES-04 (dialer): ciclo de vida de la sesión en `_pdStart`/`_pdExit`, pantalla de cierre ÚNICA (también al agotar la cola) y chips de estado
+- [x] 37-03-PLAN.md — SES-02/SES-04 (dialer): ciclo de vida de la sesión en `_pdStart`/`_pdExit`, pantalla de cierre ÚNICA (también al agotar la cola) y chips de estado (completed 2026-08-23, 37-03-SUMMARY.md — `window._pdExit` en dos fases, `_pdShowClosing` único renderizador de cierre (salida y fin de cola), D-01 escrito en código (`_sesClosingModel.big.value === dials`), gracia de 250ms antes del cierre, chips de mood opcionales sin bloquear la salida, 56 tests nuevos, suite completa 2232/2232 baseline 2176/2176)
 
 **Wave 4** *(depende de 37-02 y 37-03)*
 
@@ -628,7 +628,7 @@ Plans:
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
 | 35. SCR — Atribución de guion | 4/4 | human_needed (UAT pendiente) | 2026-08-22 |
 | 36. DISP — La disposición responde | 3/3 | Complete | 2026-08-23 |
-| 37. SES — La sesión de discado como partida | 2/4 | Executing | — |
+| 37. SES — La sesión de discado como partida | 3/4 | Executing | — |
 
 
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)
