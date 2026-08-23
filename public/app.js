@@ -7544,6 +7544,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         note: '',
       };
     }
+
+    // [37-04] Un solo mapa de etiquetas para el estado del operador (SES-04)
+    // — lo consumen los chips de ESTA MISMA pantalla de cierre (más abajo,
+    // _pdRenderClosingScreen) Y la columna "Cómo la remó" del historial de
+    // sesiones en Mi rendimiento (_mypLoadSessions). Mismos ids que la
+    // whitelist DIAL_SESSION_MOODS del backend (bien/normal/costo/pesimo);
+    // acá solo viven las etiquetas con acentos. Un mood desconocido o vacío
+    // NO está en este mapa a propósito — quien lo consuma decide el guion
+    // discreto, nunca "undefined" (no responder es una opción válida, D-03).
+    const SES_MOOD_LABELS = { bien: 'Bien', normal: 'Normal', costo: 'Me costó', pesimo: 'Pésima' };
+
+    // [37-04] Clave de día de calendario LOCAL (no UTC): mismos año/mes/día
+    // que vería el SDR en su reloj. Ayuda de _sesHistoryRows.
+    function _sesDayKey(ms) {
+      const d = new Date(ms);
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    }
+
+    // [37-04] Arma el modelo de fila para la tabla "Sesiones de discado" de
+    // Mi rendimiento (SES-03): agrupa por día de calendario LOCAL con un
+    // encabezado por jornada (Hoy / Ayer / fecha) — SIN sumar ningún total
+    // por día (37-02 explica el motivo: competiría con el funnel canónico de
+    // la misma pantalla, unas secciones más arriba). El HTML lo arma el
+    // render de afuera; acá solo se calcula la forma. `nowMs` siempre por
+    // parámetro — el bloque no puede leer el reloj del sistema directo.
+    function _sesHistoryRows(sessions, nowMs) {
+      const list = Array.isArray(sessions) ? sessions.slice() : [];
+      list.sort((a, b) => new Date(b?.startedAt || 0).getTime() - new Date(a?.startedAt || 0).getTime());
+      let now = Number(nowMs);
+      if (!Number.isFinite(now)) now = 0;
+      const todayKey = _sesDayKey(now);
+      const yesterdayKey = _sesDayKey(now - 86400000);
+
+      const rows = [];
+      let lastDayKey = null;
+      for (const s of list) {
+        if (!s || typeof s !== 'object') continue;
+        const startedMs = new Date(s.startedAt).getTime();
+        const dayKey = _sesDayKey(startedMs);
+        if (dayKey !== lastDayKey) {
+          let label;
+          if (dayKey === todayKey) label = 'Hoy';
+          else if (dayKey === yesterdayKey) label = 'Ayer';
+          else {
+            const d = new Date(startedMs);
+            label = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+          }
+          rows.push({ tipo: 'dia', label });
+          lastDayKey = dayKey;
+        }
+        // Sesión ABIERTA: "en curso", sin números — counters todavía es null
+        // en el backend hasta que se cierre.
+        const enCurso = !s.endedAt;
+        const counters = (s.counters && typeof s.counters === 'object') ? s.counters : null;
+        rows.push({
+          tipo: 'sesion',
+          hora: startedMs,
+          duracion: _sesDurationLabel(s.durationS),
+          dials: enCurso ? null : (counters ? (Number(counters.dials) || 0) : 0),
+          connects: enCurso ? null : (counters ? (Number(counters.connects) || 0) : 0),
+          conversations: enCurso ? null : (counters ? (Number(counters.conversations) || 0) : 0),
+          mood: s.mood || '',
+          cola: { mode: s.mode || 'calls', hoyFilter: s.hoyFilter || null, queueSize: Number(s.queueSize) || 0 },
+          auto: s.closedBy === 'auto',
+          enCurso,
+        });
+      }
+      return rows;
+    }
     // ─── [37-03] SESSION-PURE: FIN ───
     window.__ses = { _sesDurationLabel, _sesClosingModel };
 
@@ -7674,7 +7743,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           vs tu sesión anterior (${escHtml(model.comparison.when ? new Date(model.comparison.when).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '')}):
           ${model.comparison.prevDials} marcadas (${model.comparison.diff > 0 ? '+' : ''}${model.comparison.diff})
         </p>` : '';
-      const moodOptions = [['bien', 'Bien'], ['normal', 'Normal'], ['costo', 'Me costó'], ['pesimo', 'Pésima']];
+      // [37-04] Las etiquetas ya no se escriben a mano acá — un solo mapa
+      // (SES_MOOD_LABELS, dentro del bloque SESSION-PURE) para los chips de
+      // cierre y para la columna "Cómo la remó" del historial.
+      const moodOptions = Object.entries(SES_MOOD_LABELS);
       const moodHTML = model.canMood ? `
         <div style="margin-top:24px;">
           <p style="font-size:12px; color:var(--text-secondary); margin:0 0 8px;">¿Cómo la remaste?</p>
@@ -19758,6 +19830,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       _mypRenderChart(d);
       // Mi pipeline — cartera personal por etapa. No bloquea el resto.
       _mypLoadPipeline(effectiveSetter).catch((e) => console.warn('[myp-pipeline]', e?.message));
+      // Historial de sesiones de discado (SES-03/SES-04) — no bloquea el
+      // resto de la vista, mismo criterio que _mypLoadPipeline. Sin período
+      // propio a propósito: no engancharlo a _mypState.period (ver
+      // comentario dentro de _mypLoadSessions).
+      _mypLoadSessions(effectiveSetter).catch((e) => console.warn('[myp-sessions]', e?.message));
       _mypPopulateSetters();
     } catch (e) {
       window.showToast?.('Error cargando rendimiento: ' + e.message, { type: 'error' });
@@ -19843,6 +19920,101 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button onclick="document.querySelector('[data-target=&quot;view-hoy&quot;]')?.click()" style="margin-left:auto; background:var(--success); color: var(--on-accent); border:none; padding:6px 13px; border-radius:7px; font-weight:600; font-size:11.5px; cursor:pointer; font-family:inherit;">Ir a Hoy</button>
         </div>` : ''}
       </div>`;
+  }
+
+  // ─── Sesiones de discado (dentro de view-myperf) ────────────────────────
+  // Historial de partidas (SES-03): hoy contra ayer, con la respuesta de
+  // estado del que marcó a la vista — hasta acá (37-01/37-02/37-03) `mood`
+  // era write-only, SES-04 recién cierra de punta a punta acá. Las últimas
+  // 20 sesiones y punto: NO se engancha a `_mypState.period` ni suma un
+  // total por día — 37-02 documenta por qué (un total diario propio sería un
+  // segundo número de "hoy" que puede no coincidir con el canónico del
+  // funnel que está más arriba en esta MISMA pantalla). No "arreglar" esto
+  // agregando un período propio en un plan futuro.
+  async function _mypLoadSessions(effectiveSetter) {
+    const el = document.getElementById('myp-sessions');
+    if (!el) return;
+    const params = new URLSearchParams();
+    params.set('limit', '20');
+    const role = window.__CURRENT_USER__?.role;
+    // Mismo criterio que _mypLoadPipeline (reglas #135/#146): un SDR real
+    // nunca manda ?setter= (el backend ya lo resuelve por su propio auth);
+    // admin/supervisor sí, cuando hay un SDR elegido — selector de la vista
+    // o modo "Ver como SDR" (effectiveSetter ya trae esa resolución hecha).
+    if (effectiveSetter && (role === 'admin' || role === 'supervisor')) params.set('setter', effectiveSetter);
+    let sessions;
+    try {
+      const r = await fetch(apiUrl('/api/setters/dial-sessions?' + params.toString()), { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      sessions = Array.isArray(d?.sessions) ? d.sessions : [];
+    } catch (e) {
+      console.warn('[myp-sessions]', e?.message);
+      el.innerHTML = '<p class="muted" style="text-align:center; padding:14px 0; font-size:12.5px;">No se pudo cargar el historial de sesiones.</p>';
+      return;
+    }
+
+    if (!sessions.length) {
+      el.innerHTML = `<div class="card" style="padding:20px; text-align:center;">
+        <p class="muted" style="margin:0; font-size:12.5px;">Todavía no registraste ninguna sesión de discado — abrí el Power Dialer y al salir vas a ver acá el resultado.</p>
+      </div>`;
+      return;
+    }
+
+    const rows = _sesHistoryRows(sessions, Date.now());
+    const modeLabels = { calls: 'Llamadas', hoy: 'Hoy' };
+    const rowsHTML = rows.map((row) => {
+      if (row.tipo === 'dia') {
+        return `<tr><td colspan="7" style="padding:14px 8px 5px; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px;">${escHtml(row.label)}</td></tr>`;
+      }
+      const hora = escHtml(new Date(row.hora).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }));
+      const modeLabel = escHtml(modeLabels[row.cola.mode] || row.cola.mode || '');
+      const colaExtra = row.cola.hoyFilter ? ` · ${escHtml(row.cola.hoyFilter)}` : '';
+      // Una sesión que se cerró sola (pestaña cerrada, recarga) no se lee
+      // como una jornada que terminó — marca discreta con el porqué en el
+      // title (T-37-18).
+      const autoTag = row.auto
+        ? ` <span title="La pestaña se cerró o se recargó — esta sesión no la cerraste vos." style="font-size:9.5px; color:var(--text-tertiary); border:1px solid var(--border-subtle); border-radius:4px; padding:1px 5px; margin-left:6px; white-space:nowrap;">cerrada sola</span>`
+        : '';
+      if (row.enCurso) {
+        return `<tr style="border-bottom:1px solid var(--border-subtle);">
+          <td style="padding:8px 10px; font-variant-numeric:tabular-nums;">${hora}</td>
+          <td colspan="4" style="padding:8px 10px; color:var(--accent); font-weight:600;">en curso…</td>
+          <td style="padding:8px 10px; color:var(--text-tertiary);">—</td>
+          <td style="padding:8px 10px; color:var(--text-tertiary); font-size:11px;">${modeLabel}${colaExtra}</td>
+        </tr>`;
+      }
+      // mood pasa por SES_MOOD_LABELS (mapa cerrado) antes de escHtml — un
+      // valor desconocido cae al guion discreto, nunca a rojo (D-03: no
+      // responder es una opción válida).
+      const moodLabel = escHtml(row.mood ? (SES_MOOD_LABELS[row.mood] || '—') : '—');
+      return `<tr style="border-bottom:1px solid var(--border-subtle);">
+        <td style="padding:8px 10px; font-variant-numeric:tabular-nums;">${hora}${autoTag}</td>
+        <td style="padding:8px 10px; text-align:right; font-variant-numeric:tabular-nums; color:var(--text-secondary);">${escHtml(row.duracion)}</td>
+        <td style="padding:8px 10px; text-align:right; font-variant-numeric:tabular-nums; font-weight:700; color:var(--text-primary);">${row.dials}</td>
+        <td style="padding:8px 10px; text-align:right; font-variant-numeric:tabular-nums; color:var(--text-secondary);">${row.connects}</td>
+        <td style="padding:8px 10px; text-align:right; font-variant-numeric:tabular-nums; color:var(--text-secondary);">${row.conversations}</td>
+        <td style="padding:8px 10px;">${moodLabel}</td>
+        <td style="padding:8px 10px; color:var(--text-tertiary); font-size:11px;">${modeLabel}${colaExtra} · ${row.cola.queueSize}</td>
+      </tr>`;
+    }).join('');
+
+    el.innerHTML = `<div class="card" style="padding:6px 16px 14px; overflow-x:auto;">
+      <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+        <thead>
+          <tr style="text-align:left; border-bottom:1px solid var(--border-subtle);">
+            <th style="padding:9px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Cuándo</th>
+            <th style="padding:9px 10px; text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Duración</th>
+            <th style="padding:9px 10px; text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Marcadas</th>
+            <th style="padding:9px 10px; text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Atendieron</th>
+            <th style="padding:9px 10px; text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Conversaciones</th>
+            <th style="padding:9px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Cómo la remó</th>
+            <th style="padding:9px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Cola</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHTML}</tbody>
+      </table>
+    </div>`;
   }
 
   document.querySelector('[data-target="view-myperf"]')?.addEventListener('click', () => {
