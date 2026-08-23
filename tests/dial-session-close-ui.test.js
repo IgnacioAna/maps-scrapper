@@ -428,8 +428,16 @@ describe("Los números de la sesión NO salen del chip de meta diaria (SES-05)",
 });
 
 describe("Estado del operador (SES-04): 4 chips + PATCH opcional que nunca bloquea", () => {
+  // 2026-08-23 (Fase 37, plan 04): las 4 etiquetas ya NO se escriben a mano
+  // en `_pdRenderClosingScreen` — 37-04 mueve el mapa a `SES_MOOD_LABELS`
+  // (declarado 1 vez, dentro del bloque SESSION-PURE) y los chips lo
+  // consumen vía `Object.entries(SES_MOOD_LABELS)`. La suite dedicada de
+  // 37-04 (tests/dial-session-myperf-ui.test.js) cubre el contenido y el
+  // consumo compartido con el historial; acá solo se verifica que los
+  // chips sigan consumiendo el mapa único, no una copia local.
   it("los 4 moods bien|normal|costo|pesimo aparecen como data-mood en el HTML de la pantalla de cierre", () => {
-    expect(appJs).toContain("[['bien', 'Bien'], ['normal', 'Normal'], ['costo', 'Me costó'], ['pesimo', 'Pésima']]");
+    expect(appJs).toContain("const SES_MOOD_LABELS = { bien: 'Bien', normal: 'Normal', costo: 'Me costó', pesimo: 'Pésima' };");
+    expect(appJs).toContain("const moodOptions = Object.entries(SES_MOOD_LABELS);");
     expect(appJs).toContain('data-mood="${id}"');
   });
 
