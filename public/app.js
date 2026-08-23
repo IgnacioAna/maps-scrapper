@@ -7802,7 +7802,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             { v:'callback_later',          k:'7', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
             { v:'wrong_number',            k:'8', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
             { v:'invalid_number',          k:'9', label:'No existe',       sub:'inválido / desact.',  color:'neutral' }
-          ].map(d => `<button type="button" class="pd-disp-btn pd-disp-${d.color}" onclick="window._pdHandleDispositionDirect('${escHtml(lead.id)}', '${d.v}')">
+          ].map(d => `<button type="button" class="pd-disp-btn pd-disp-${d.color}" data-outcome="${d.v}" onclick="window._pdHandleDispositionDirect('${escHtml(lead.id)}', '${d.v}')">
             <div class="pd-disp-key">${d.k}</div>
             <div class="pd-disp-text">
               <div class="pd-disp-label">${d.label}</div>
@@ -10066,11 +10066,93 @@ document.addEventListener('DOMContentLoaded', async () => {
       _dispoGateRenderBanner();
     }
 
+    // ─── [36-01] RESP-01: acuse inmediato ───
+    // Marcar un resultado puede tardar hasta varios segundos (colgar+capturar
+    // audio antes del POST, o el polling del Power Dialer) antes de que
+    // aparezca algo en pantalla — el SDR marca de nuevo o cree que se perdió.
+    // Este bloque es la ÚNICA fuente del estado "guardando": pinta el botón
+    // del grid del dialer y/o el select de la lista/Hoy en el instante del
+    // clic, y se apaga en exactamente 3 finales legítimos (guardado, error,
+    // modal abierto — ahí la espera es a una persona) más un techo de 15s
+    // que lo libera solo si ninguno de los 3 ocurrió.
+    const _DISPO_MODAL_OUTCOMES = new Set(['callback_later', 'scheduled_with_admin', 'answered_interested', 'answered_not_interested']);
+    let _dispoBusy = null; // { leadId, btn, prevSub, selectEl, prevOpt, timer }
+
+    function _dispoBusyOn(leadId, outcome, selectEl) {
+      _dispoBusyOff(); // nunca puede haber dos indicadores vivos a la vez
+      const state = { leadId, btn: null, prevSub: null, selectEl: null, prevOpt: null, timer: null };
+
+      // Grid del Power Dialer.
+      try {
+        const btn = document.querySelector('.pd-disposition-grid .pd-disp-btn[data-outcome="' + outcome + '"]');
+        if (btn) {
+          state.btn = btn;
+          btn.closest('.pd-disposition-grid')?.classList.add('is-busy');
+          btn.classList.add('is-saving');
+          const sub = btn.querySelector('.pd-disp-sub');
+          if (sub) {
+            state.prevSub = sub.textContent;
+            sub.textContent = 'Guardando…';
+          }
+        }
+      } catch {}
+
+      // Select de la lista de Llamadas / tarjetas de Hoy. Detectado por
+      // CAPACIDAD, nunca por instanceof: el Power Dialer manda el objeto
+      // falso {value, disabled} que arma _pdHandleDispositionDirect — ese
+      // objeto no tiene querySelector.
+      try {
+        if (selectEl && typeof selectEl.querySelector === 'function') {
+          selectEl.classList.add('is-saving');
+          const opt0 = selectEl.options?.[0];
+          if (opt0) {
+            state.selectEl = selectEl;
+            state.prevOpt = opt0.textContent;
+            opt0.textContent = 'Guardando…';
+          }
+          selectEl.selectedIndex = 0; // el texto "Guardando…" queda a la vista
+        }
+      } catch {}
+
+      state.timer = setTimeout(() => _dispoBusyOff(leadId), 15000);
+      _dispoBusy = state;
+    }
+
+    function _dispoBusyOff(leadId) {
+      const st = _dispoBusy;
+      if (!st) return;
+      // Mismo guard que _dispoGateClear: un apagado de otro lead no puede
+      // pisar el indicador vivo de este.
+      if (leadId && st.leadId !== leadId) return;
+      if (st.timer) clearTimeout(st.timer);
+      try {
+        if (st.btn) {
+          if (st.prevSub != null) {
+            const sub = st.btn.querySelector('.pd-disp-sub');
+            if (sub) sub.textContent = st.prevSub;
+          }
+          st.btn.classList.remove('is-saving');
+          st.btn.closest('.pd-disposition-grid')?.classList.remove('is-busy');
+        }
+      } catch {}
+      try {
+        if (st.selectEl) {
+          const opt0 = st.selectEl.options?.[0];
+          if (opt0 && st.prevOpt != null) opt0.textContent = st.prevOpt;
+          st.selectEl.classList.remove('is-saving');
+        }
+      } catch {}
+      _dispoBusy = null;
+    }
+
     // Se llama en CADA disposición exitosa (los 5 POST + la auto-marca):
     // limpia el gate, refresca la franja de pendientes, y anuncia a dónde se
     // fue el lead (D-05, plan 30-03). opts = { lead, outcome, manual } — se
     // reenvían tal cual a _dispoAnnounce.
     function _dispoAfterSaved(leadId, opts = {}) {
+      // [36-01] RESP-01: punto único post-guardado — acá se apaga el acuse
+      // "Guardando…" prendido por _dispoBusyOn al inicio del handler.
+      _dispoBusyOff(leadId);
       // DIAL-02 (33-02): señal determinística de que ESTA disposición se
       // guardó de verdad. NO se llama _pdHold acá a propósito: este punto
       // corre en el momento del guardado, que puede ser con un modal
@@ -12777,11 +12859,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const outcome = selectEl.value;
       if (!outcome) return;
       selectEl.disabled = true;
+      // [36-01] RESP-01: acuse en el mismo frame del clic, ANTES de la
+      // primera espera (finalizar la llamada activa puede tardar hasta 4,75s).
+      _dispoBusyOn(leadId, outcome, selectEl);
 
       try {
         // Si la llamada sigue activa (marcó el resultado sin colgar), colgar y capturar
         // audio + metadata ANTES de seguir → la llamada NO queda 'manual' sin transcript.
         await _finalizeActiveCallBeforeDisposition(leadId);
+        // [36-01] RESP-01: a partir de acá, si el outcome abre un modal, la
+        // espera es a una PERSONA (no al sistema) — cada modal ya tiene su
+        // propio "Guardando…" en el botón de confirmar.
+        if (_DISPO_MODAL_OUTCOMES.has(outcome)) _dispoBusyOff(leadId);
         if (outcome === 'callback_later') {
           openCallbackModal(leadId);
           selectEl.value = '';
@@ -12859,6 +12948,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) {
         alert('Error guardando: ' + e.message);
         selectEl.disabled = false;
+        _dispoBusyOff(leadId);
       }
     };
 

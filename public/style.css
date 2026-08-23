@@ -4830,6 +4830,44 @@ textarea:disabled {
 .pd-disp-accent:hover .pd-disp-label { color: var(--accent); }
 .pd-disp-accent:hover .pd-disp-key { background: var(--accent-medium); color: var(--accent); border-color: var(--accent-strong); }
 
+/* ════════════════════════════════════════════════════════════════
+   [36-01] RESP-01 — acuse inmediato: estado "Guardando…" del grid del
+   Power Dialer y del select de disposición (lista de Llamadas / Hoy).
+═════════════════════════════════════════════════════════════════ */
+.pd-disposition-grid.is-busy .pd-disp-btn {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.pd-disposition-grid.is-busy .pd-disp-btn.is-saving {
+  opacity: 1;
+  border-color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+.pd-disposition-grid.is-busy .pd-disp-btn.is-saving .pd-disp-key {
+  background: var(--accent-medium);
+  color: var(--accent);
+  border-color: var(--accent-strong);
+}
+.pd-disposition-grid.is-busy .pd-disp-btn.is-saving .pd-disp-sub {
+  color: var(--accent);
+  animation: dispoSavingPulse 1s ease-in-out infinite;
+}
+
+/* Especificidad (0,2,1) — le gana a la regla global select:disabled
+   (0,1,1) de la línea ~3922 sin necesidad de !important. */
+select.is-saving:disabled {
+  opacity: 1;
+  border-color: var(--accent-strong);
+  color: var(--text-primary);
+  animation: dispoSavingPulse 1s ease-in-out infinite;
+}
+
+@keyframes dispoSavingPulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.62; }
+  100% { opacity: 1; }
+}
+
 /* Quick-links: outline limpio sin emojis */
 .pd-quick-link {
   display: inline-flex;
