@@ -399,7 +399,14 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   único de los 6 caminos que no lo hacía). 27 tests nuevos, verificado
   por mutación. Ver
   `.planning/phases/36-disp-disposicion-responde/36-02-SUMMARY.md`.
-- [ ] **RESP-03**: El pad DTMF arranca visible o recuerda el último estado.
+- [x] **RESP-03**: El pad DTMF arranca visible o recuerda el último estado.
+  — Completo en 36-03: por defecto ABIERTO (`_dtmfPadPrefOpen`, default
+  visible salvo `'0'` guardado en `scm_dtmf_pad`) y la preferencia se
+  recuerda por navegador en los dos sentidos (`_setDtmfPadPref`),
+  reaplicada en cada apertura del panel (`_applyDtmfPadPref`, el panel se
+  reusa entre llamadas). 25 tests nuevos, verificado por mutación. **Phase
+  36 completa (3/3).** Ver
+  `.planning/phases/36-disp-disposicion-responde/36-03-SUMMARY.md`.
 
 ### SES — La sesión de discado como partida *(Phase 37)*
 

@@ -522,7 +522,7 @@ la nota de umbrales en .planning/).
 Plans:
 - [x] 36-01-PLAN.md — RESP-01: acuse inmediato al marcar (grid del dialer, lista de Llamadas y tarjetas de Hoy), con apagado en guardado/error/modal y techo de 15s (completed 2026-08-23, 36-01-SUMMARY.md — `_dispoBusyOn`/`_dispoBusyOff` cableadas en los 4 puntos, D-01/D-02 intactos, 26 tests nuevos, suite completa 2080/2080 baseline 2054/2054)
 - [x] 36-02-PLAN.md — RESP-02: el POST del resultado deja de esperar al audio — la metadata se arma al colgar (sincrónica) y la espera del audio se muda al flush de transcripción (completed 2026-08-23, 36-02-SUMMARY.md — `_finalizeActiveCallBeforeDisposition` sin ningún await, `_metaObj` sincrónico afuera del setTimeout de 500ms, `_audioInFlight` para la transcripción diferida, agendado consume `telnyxCallMeta`, 27 tests nuevos verificados por mutación, suite completa 2107/2107 baseline 2080/2080)
-- [ ] 36-03-PLAN.md — RESP-03: el teclado DTMF arranca visible y recuerda el último estado por navegador
+- [x] 36-03-PLAN.md — RESP-03: el teclado DTMF arranca visible y recuerda el último estado por navegador (completed 2026-08-23, 36-03-SUMMARY.md — `_dtmfPadPrefOpen`/`_applyDtmfPadPref`/`_setDtmfPadPref` + toggle persistente + aplicación al abrir el panel, 25 tests nuevos verificados por mutación, suite completa 2132/2132 baseline 2107/2107, **Phase 36 COMPLETA (3/3 planes)**)
 
 ---
 
@@ -627,7 +627,7 @@ Plans:
 | 33. DIAL — Power Dialer como motor único | 4/4 | Complete | 2026-08-16 |
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
 | 35. SCR — Atribución de guion | 4/4 | human_needed (UAT pendiente) | 2026-08-22 |
-| 36. DISP — La disposición responde | 2/3 | Executing | — |
+| 36. DISP — La disposición responde | 3/3 | Complete | 2026-08-23 |
 | 37. SES — La sesión de discado como partida | 0/4 | Planned | — |
 
 

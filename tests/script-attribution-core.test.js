@@ -60,7 +60,13 @@ describe('SCR-ATTR — fuente (cableado en public/app.js)', () => {
   it('_startTelnyxCall siembra el default con auto:true al iniciar la llamada', () => {
     const i = appJs.indexOf("window._startTelnyxCall = async");
     expect(i).toBeGreaterThan(0);
-    const bloque = appJs.slice(i, i + 6200);
+    // Ventana ampliada 6200 -> 6800 por [36-03] RESP-03: se insertó la
+    // aplicación de _applyDtmfPadPref/_dtmfPadPrefOpen justo después de
+    // panel.style.display = 'flex' (dentro de este mismo cuerpo), que corrió
+    // los literales de re-siembra ~280 chars más adelante. Deviation Rule 1
+    // (bug expuesto por una ventana fija ante una inserción legítima y ajena
+    // a esta fase — mismo patrón documentado en 33-03/34-02 de STATE.md).
+    const bloque = appJs.slice(i, i + 6800);
     expect(bloque).toContain('_clearCallScript();');
     expect(bloque).toContain('_scriptDefaultId(), { auto: true }');
     // Re-siembra tardía dentro del .then de _ensureCallScripts (banco no
