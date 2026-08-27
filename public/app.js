@@ -11790,7 +11790,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       el.style.display = 'flex';
     }
 
-    // Ringback tone local (440Hz + 480Hz, patrón US: 2s ON / 4s OFF).
+    // Ringback tone local (400Hz + 450Hz, cadencia 1,2s ON / 3s OFF).
+    // Tono propio: no reproduce ningún estándar de red (US 440+480, Europa 425).
     // Telnyx WebRTC v2 NO reproduce el ringback del carrier automáticamente
     // — el SDR no escucharía nada mientras suena en el destino. Sintetizamos
     // el tono localmente con Web Audio API. Se inicia en 'ringing' y se detiene
@@ -11806,19 +11807,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (_ringbackNodes) _stopRingbackTone();
         const ctx = _ringbackCtx;
         const now = ctx.currentTime;
-        const osc1 = ctx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = 440;
-        const osc2 = ctx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = 480;
+        const TONO_A = 400, TONO_B = 450;   // fuera del ringback estándar
+        const ON = 1.2, OFF = 3.0;          // cadencia propia, distinta del patrón US 2/4
+        const osc1 = ctx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = TONO_A;
+        const osc2 = ctx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = TONO_B;
         const gain = ctx.createGain(); gain.gain.value = 0;
-        // Programar 20 ciclos de 6s = 2min de ringback. Suficiente: si nadie
-        // atiende en 2min cancelás vos. El SDK también puede emitir 'hangup'
-        // por timeout antes y _stopRingbackTone() corta los osciladores.
-        const cycleDuration = 6; // 2s ON + 4s OFF
-        for (let i = 0; i < 20; i++) {
+        // Cubrir ~2 min de ringback. Si nadie atiende, cancelás vos o el SDK
+        // emite 'hangup' por timeout y _stopRingbackTone() corta los osciladores.
+        const cycleDuration = ON + OFF;
+        const ciclos = Math.ceil(120 / cycleDuration);
+        for (let i = 0; i < ciclos; i++) {
           const cycleStart = now + (i * cycleDuration);
           gain.gain.setValueAtTime(0, cycleStart);
           gain.gain.linearRampToValueAtTime(0.12, cycleStart + 0.04);
-          gain.gain.setValueAtTime(0.12, cycleStart + 2);
-          gain.gain.linearRampToValueAtTime(0, cycleStart + 2.04);
+          gain.gain.setValueAtTime(0.12, cycleStart + ON);
+          gain.gain.linearRampToValueAtTime(0, cycleStart + ON + 0.04);
         }
         osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
         osc1.start(now); osc2.start(now);
