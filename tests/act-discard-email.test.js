@@ -416,19 +416,26 @@ describe('Material por email (ACT-05)', () => {
     expect(r.status).toBe(200);
   });
 
-  it('26. MEMBRETADO (MAIL-08): send-material usa _brandedEmailHtml y el membretado tiene la marca Vincca', () => {
+  it('26. MEMBRETADO LIVIANO (MAIL-08, 2026-08-31): send-material usa _brandedEmailHtml sin la tarjeta de marketing (para caer en Principal, no Promociones)', () => {
     const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
     const start = src.indexOf("app.post('/api/setters/leads/:id/send-material'");
     const end = src.indexOf('// ── Deduplicar leads de setters', start);
     const block = src.slice(start, end);
     expect(block).toContain('_brandedEmailHtml(');
-    // El helper de membretado existe y trae los dos elementos bronce de la marca.
     const bStart = src.indexOf('function _brandedEmailHtml(');
     expect(bStart).toBeGreaterThan(-1);
-    const bBlock = src.slice(bStart, bStart + 2600);
-    expect(bBlock).toContain('#A67C1B'); // filete + V del wordmark (bronce)
-    expect(bBlock).toContain('#FAF7F0'); // fondo de la tarjeta
-    expect(bBlock).toContain('>V</span>'); // wordmark Vincca
+    const bBlock = src.slice(bStart, bStart + 2000);
+    // Liviano: SIN los disparadores del clasificador de Promociones de Gmail —
+    // sin fondo de tarjeta, sin wordmark, sin barra/filete bronce, sin tabla centrada.
+    expect(bBlock).not.toContain('#FAF7F0');   // fondo de la tarjeta (ya no)
+    expect(bBlock).not.toContain('>V</span>'); // wordmark (ya no)
+    expect(bBlock).not.toContain('#A67C1B');   // barra bronce (ya no)
+    expect(bBlock).not.toMatch(/width="600"/); // tabla centrada (ya no)
+    // Conserva marca discreta: firma con el nombre + Vincca y a lo sumo 2 links.
+    expect(bBlock).toContain('Ignacio Ana');
+    expect(bBlock).toContain('Vincca');
+    const links = (bBlock.match(/<a\s/g) || []).length;
+    expect(links).toBeLessThanOrEqual(2);
     // D-18: cero imágenes / beacons de tracking en el membretado.
     expect(bBlock).not.toContain('<img');
   });

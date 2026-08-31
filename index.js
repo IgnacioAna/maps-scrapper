@@ -12604,56 +12604,28 @@ function _actEmailParagraphs(text) {
     .join('\n');
 }
 
-// Milestone v5.0 (MAIL-08): membretado de marca Vincca (sección 2 del doc del
-// 30/08). Tablas + estilos inline porque Gmail/Outlook descartan el CSS externo;
-// tipografías de marca primero, caen a las del sistema. Cero imágenes, cero
-// botones, cero beacons de tracking (D-18). Dos elementos bronce (el filete y la
-// V del wordmark), que es el tope que fija la marca. {{CUERPO}} es lo único que
-// varía; NO se toca el resto del membretado.
+// Milestone v5.0 (MAIL-08) — MEMBRETADO LIVIANO (2026-08-31): la versión con
+// tarjeta centrada de 600px + fondo de color + barra bronce + wordmark hacía que
+// Gmail tirara el correo del puente a PROMOCIONES (verificado en vivo). Para un
+// follow-up 1-a-1 post-llamada eso mata la apertura. Se rebajó a un membretado
+// que se lee como un mail personal escrito en Gmail: alineado a la izquierda, SIN
+// tarjeta, SIN fondo, SIN wordmark, SIN barra de color. Marca discreta = firma con
+// el nombre en negrita + "Vincca" y un filete sutil, con solo 2 links (vincca.co +
+// WhatsApp; se sacó LinkedIn — varios links son señal de promoción). Estilos inline
+// (Gmail/Outlook descartan CSS externo); tipografías de marca primero, caen a las
+// del sistema. Cero imágenes, cero botones, cero beacons (D-18).
 function _brandedEmailHtml(bodyText) {
   const cuerpo = _actEmailParagraphs(bodyText);
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-       style="background:#F1EDE3; margin:0; padding:32px 12px;">
-  <tr><td align="center">
-    <table role="presentation" width="600" cellpadding="0" cellspacing="0"
-           style="max-width:600px; background:#FAF7F0; border:1px solid #E3DFD4;">
-
-      <!-- filete bronce (1 de 2) -->
-      <tr><td style="height:3px; background:#A67C1B; line-height:3px;">&nbsp;</td></tr>
-
-      <!-- wordmark (2 de 2) -->
-      <tr><td style="padding:26px 34px 0 34px;">
-        <span style="font-family:'Lexend',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
-                     font-size:17px; font-weight:600; letter-spacing:-0.01em; color:#1A1D24;">
-          <span style="color:#A67C1B;">V</span>incca
-        </span>
-      </td></tr>
-
-      <!-- cuerpo -->
-      <tr><td style="padding:22px 34px 8px 34px;
-                     font-family:'Source Sans 3',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
-                     font-size:17px; line-height:1.62; color:#1A1D24;">
-        ${cuerpo}
-      </td></tr>
-
-      <!-- firma -->
-      <tr><td style="padding:8px 34px 30px 34px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          <tr><td style="border-top:1px solid #E3DFD4; padding-top:16px;
-                         font-family:'Source Sans 3',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
-                         font-size:15px; line-height:1.6; color:#5C574C;">
-            <strong style="color:#1A1D24; font-weight:600;">Ignacio Ana</strong><br>
-            Vincca<br>
-            <a href="https://vincca.co" style="color:#5C574C; text-decoration:underline;">vincca.co</a><br>
-            <a href="https://wa.me/5492213508505" style="color:#5C574C; text-decoration:underline;">WhatsApp</a><br>
-            <a href="https://www.linkedin.com/in/ignacio-ana" style="color:#5C574C; text-decoration:underline;">LinkedIn</a>
-          </td></tr>
-        </table>
-      </td></tr>
-
-    </table>
-  </td></tr>
-</table>`;
+  return `<div style="font-family:'Source Sans 3',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+            font-size:16px; line-height:1.6; color:#1A1D24; max-width:600px;">
+  ${cuerpo}
+  <div style="margin-top:20px; padding-top:14px; border-top:1px solid #E3DFD4;
+              font-size:14px; line-height:1.55; color:#5C574C;">
+    <strong style="color:#1A1D24; font-weight:600;">Ignacio Ana</strong> · Vincca<br>
+    <a href="https://vincca.co" style="color:#5C574C; text-decoration:underline;">vincca.co</a> ·
+    <a href="https://wa.me/5492213508505" style="color:#5C574C; text-decoration:underline;">WhatsApp</a>
+  </div>
+</div>`;
 }
 
 // Milestone v5.0 (MAIL-09, guarda dura): el ÚLTIMO check antes de mandar. Un
