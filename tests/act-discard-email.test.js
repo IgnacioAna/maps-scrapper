@@ -22,6 +22,10 @@ process.env.OPENAI_API_KEY = '';
 process.env.MERCURY_API_KEY = '';
 process.env.QWEN_API_KEY = '';
 process.env.RESEND_API_KEY = '';
+// Milestone v5.0: send-material ahora sale por Gmail SMTP. Sin estas dos, la vía
+// 'resend' (renombrada por dentro a Gmail) cae al 409-con-mailtoUrl.
+process.env.GMAIL_USER = '';
+process.env.GMAIL_APP_PASSWORD = '';
 
 function pwd(plain) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -315,7 +319,7 @@ describe('Material por email (ACT-05)', () => {
     expect(last.canal).toBe('email');
   });
 
-  it('16. via:"resend" sin RESEND_API_KEY → 409 con resendUnavailable:true y mailtoUrl, lead sin cambios', async () => {
+  it('16. via:"resend" sin credenciales Gmail → 409 con resendUnavailable:true y mailtoUrl, lead sin cambios', async () => {
     const before = readLead('l_email_resend_unavail');
     expect(before.commitment == null).toBe(true);
     const r = await sendMaterial('l_email_resend_unavail', { via: 'resend', message: 'info por resend' }, setterACookie);
@@ -352,5 +356,80 @@ describe('Material por email (ACT-05)', () => {
     const block = src.slice(start, end);
     expect(block).not.toContain('<img');
     expect(block.toLowerCase()).not.toContain('pixel');
+  });
+
+  it('21. Milestone v5.0 (MAIL-02/03): send-material envía por Gmail (_sendGmailEmail) con parte text/plain, no por Resend', () => {
+    const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+    const start = src.indexOf("app.post('/api/setters/leads/:id/send-material'");
+    const end = src.indexOf('// ── Deduplicar leads de setters', start);
+    const block = src.slice(start, end);
+    // La rama de envío conmutó a Gmail…
+    expect(block).toContain('_sendGmailEmail(');
+    expect(block).not.toContain('_sendPlaceholderEmail(');
+    // …con parte text/plain (MAIL-03)…
+    expect(block).toContain('textBody:');
+    // …y el gate del 409 mira credenciales Gmail, no RESEND_API_KEY.
+    expect(block).toContain('GMAIL_USER');
+    expect(block).toContain('GMAIL_APP_PASSWORD');
+  });
+
+  it('22. El helper _sendGmailEmail existe y usa smtp.gmail.com por 465/TLS con GMAIL_USER/GMAIL_APP_PASSWORD', () => {
+    const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+    const start = src.indexOf('async function _sendGmailEmail(');
+    expect(start).toBeGreaterThan(-1);
+    const block = src.slice(start, start + 1400);
+    expect(block).toContain('smtp.gmail.com');
+    expect(block).toContain('port: 465');
+    expect(block).toContain('process.env.GMAIL_USER');
+    expect(block).toContain('process.env.GMAIL_APP_PASSWORD');
+    // Contrato preservado: misma forma de retorno { sent, reason } y el From es
+    // la casilla autenticada (Google reescribe cualquier otro).
+    expect(block).toContain('sent: false');
+    expect(block).toContain('sent: true');
+  });
+
+  it('23. GUARDA DURA (MAIL-09): via:"mailto" con {{HORARIO_1}} sin resolver → 400, no registra', async () => {
+    const before = readLead('l_email_mailto');
+    const beforeCount = (before.interactions || []).length;
+    const r = await sendMaterial('l_email_mailto', { via: 'mailto', message: 'Le queda mejor {{HORARIO_1}} o {{HORARIO_2}}?' }, setterACookie);
+    expect(r.status).toBe(400);
+    const after = readLead('l_email_mailto');
+    expect((after.interactions || []).length).toBe(beforeCount);
+  });
+
+  it('24. GUARDA DURA (MAIL-09): corchetes en el asunto → 400', async () => {
+    const r = await sendMaterial('l_email_mailto', { via: 'mailto', subject: 'Hola [DÍA]', message: 'texto limpio' }, setterACookie);
+    expect(r.status).toBe(400);
+  });
+
+  it('25. Un cuerpo sin variables sin resolver pasa la guarda (via mailto → 200)', async () => {
+    const r = await sendMaterial('l_email_mailto', { via: 'mailto', message: 'Le queda mejor el jueves 10hs o el viernes 16hs?' }, setterACookie);
+    expect(r.status).toBe(200);
+  });
+
+  it('26. MEMBRETADO (MAIL-08): send-material usa _brandedEmailHtml y el membretado tiene la marca Vincca', () => {
+    const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+    const start = src.indexOf("app.post('/api/setters/leads/:id/send-material'");
+    const end = src.indexOf('// ── Deduplicar leads de setters', start);
+    const block = src.slice(start, end);
+    expect(block).toContain('_brandedEmailHtml(');
+    // El helper de membretado existe y trae los dos elementos bronce de la marca.
+    const bStart = src.indexOf('function _brandedEmailHtml(');
+    expect(bStart).toBeGreaterThan(-1);
+    const bBlock = src.slice(bStart, bStart + 2600);
+    expect(bBlock).toContain('#A67C1B'); // filete + V del wordmark (bronce)
+    expect(bBlock).toContain('#FAF7F0'); // fondo de la tarjeta
+    expect(bBlock).toContain('>V</span>'); // wordmark Vincca
+    // D-18: cero imágenes / beacons de tracking en el membretado.
+    expect(bBlock).not.toContain('<img');
+  });
+
+  it('27. Email templates: presentacion_puente aceptado por email; envio_info (WhatsApp) no cuenta como email', () => {
+    const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
+    const start = src.indexOf('const ACT_EMAIL_TEMPLATE_IDS = new Set(');
+    expect(start).toBeGreaterThan(-1);
+    const block = src.slice(start, src.indexOf(');', start));
+    expect(block).toContain("'presentacion_puente'");
+    expect(block).not.toContain("'envio_info'");
   });
 });

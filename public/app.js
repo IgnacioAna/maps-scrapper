@@ -9381,27 +9381,46 @@ document.addEventListener('DOMContentLoaded', async () => {
       const ov = document.createElement('div');
       ov.id = 'act-material-overlay';
       ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10060; display:flex; align-items:center; justify-content:center; padding:20px;';
-      const defaultKey = 'envio_info';
-      const initialBody = _interpolateScript(_actTemplateById(defaultKey).body, lead);
-      const defaultSubject = 'La información que te prometí';
+      // Milestone v5.0: el overlay arma el correo de presentación con el puente
+      // de la recepción. Los datos ya resueltos (doctor, clínica, ciudad,
+      // recepción, antigüedad) llenan el asunto y el cuerpo, editables. Los dos
+      // horarios los completa el operador (dependen de su agenda) y se inyectan
+      // al mandar reemplazando los marcadores {{HORARIO_1}}/{{HORARIO_2}}.
+      const firmante = ((window.__CURRENT_USER__?.name || '').trim().split(/\s+/)[0]) || 'Ignacio';
+      const built0 = _buildBridgeEmail(lead, { firmante });
       ov.innerHTML = `
-        <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:480px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
-          <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Mandar material — ${escHtml(lead.name || '')}</div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">Elegí plantilla, revisá el destinatario. Queda anotado el envío.</div>
+        <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:520px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+          <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Correo de presentación — ${escHtml(lead.name || '')}</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">Se arma solo con los datos del lead. Completá los dos horarios que vas a ofrecer. Queda anotado el envío.</div>
 
-          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Para</label>
-          <input id="act-mat-email" type="email" value="${escHtml(lead.email || '')}" placeholder="mail@clinica.com" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Correo del doctor</label>
+          <input id="act-mat-email" type="email" value="${escHtml(lead.email || '')}" placeholder="doctor@clinica.com" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
 
-          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Plantilla</label>
-          <select id="act-mat-template" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
-            ${ACT_WA_TEMPLATES.map((t) => `<option value="${escHtml(t.key)}"${t.key === defaultKey ? ' selected' : ''}>${escHtml(t.label)}</option>`).join('')}
-          </select>
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Quién atendió (recepción)</label>
+          <input id="act-mat-gatekeeper" type="text" value="${escHtml(lead.gatekeeperName || '')}" placeholder="Sandra, María… (opcional)" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
 
-          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Asunto</label>
-          <input id="act-mat-subject" type="text" value="${escHtml(defaultSubject)}" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+            <div>
+              <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Horario 1</label>
+              <input id="act-mat-h1" type="text" placeholder="el jueves 10hs" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+            </div>
+            <div>
+              <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Horario 2</label>
+              <input id="act-mat-h2" type="text" placeholder="el viernes 16hs" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+            </div>
+          </div>
 
-          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Mensaje</label>
-          <textarea id="act-mat-msg" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:16px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit; min-height:110px; resize:vertical;">${escHtml(initialBody)}</textarea>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+            <label style="font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Asunto</label>
+          </div>
+          <input id="act-mat-subject" type="text" value="${escHtml(built0.subject)}" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
+            <label style="font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Cuerpo</label>
+            <button type="button" id="act-mat-regen" style="font-size:10.5px; padding:3px 9px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">Rearmar</button>
+          </div>
+          <textarea id="act-mat-msg" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:6px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13px; font-family:inherit; line-height:1.5; min-height:220px; resize:vertical;">${escHtml(built0.body)}</textarea>
+          <div style="font-size:11px; color:var(--text-tertiary); margin-bottom:16px; line-height:1.45;">Los <b>${'{{HORARIO_1}}'}</b> / <b>${'{{HORARIO_2}}'}</b> del cuerpo se reemplazan por los horarios de arriba al mandar.</div>
 
           <div style="display:flex; flex-direction:column; gap:8px;">
             <button type="button" id="act-mat-send-resend" class="btn-accent" style="padding:11px; border-radius:9px; font-size:13.5px; cursor:pointer; font-family:inherit;">Mandar por el sistema</button>
@@ -9417,22 +9436,58 @@ document.addEventListener('DOMContentLoaded', async () => {
       ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
       document.getElementById('act-mat-cancel').onclick = close;
 
-      const templateSel = document.getElementById('act-mat-template');
+      const emailEl = document.getElementById('act-mat-email');
+      const gateEl = document.getElementById('act-mat-gatekeeper');
+      const h1El = document.getElementById('act-mat-h1');
+      const h2El = document.getElementById('act-mat-h2');
+      const subjectEl = document.getElementById('act-mat-subject');
       const msgEl = document.getElementById('act-mat-msg');
-      templateSel.onchange = () => {
-        msgEl.value = _interpolateScript(_actTemplateById(templateSel.value).body, lead);
+
+      // El cuerpo se rearma desde los datos del lead + "quién atendió". Si el
+      // operador editó el cuerpo a mano, no lo pisamos sin avisar. Cambiar
+      // "quién atendió" con el cuerpo virgen lo rearma solo (para que el puente
+      // aparezca/desaparezca). Los horarios NO viven en el textarea (se inyectan
+      // al mandar), así que rearmar nunca los pierde.
+      let bodyDirty = false;
+      const regen = () => {
+        const leadForBuild = { ...lead, gatekeeperName: gateEl.value.trim(), email: emailEl.value.trim() };
+        const built = _buildBridgeEmail(leadForBuild, { firmante });
+        subjectEl.value = built.subject;
+        msgEl.value = built.body;
+        bodyDirty = false;
+      };
+      msgEl.addEventListener('input', () => { bodyDirty = true; });
+      gateEl.addEventListener('input', () => { if (!bodyDirty) regen(); });
+      document.getElementById('act-mat-regen').onclick = () => {
+        if (bodyDirty && !window.confirm('Se va a rearmar el correo con los datos actuales y se pierde lo que editaste a mano. ¿Seguir?')) return;
+        regen();
       };
 
       const resendBtn = document.getElementById('act-mat-send-resend');
       const mailtoBtn = document.getElementById('act-mat-send-mailto');
 
       const doSend = async (via) => {
-        const email = document.getElementById('act-mat-email').value;
-        const subject = document.getElementById('act-mat-subject').value;
-        const message = msgEl.value;
-        const templateId = templateSel.value;
+        const email = emailEl.value.trim();
+        if (!email) { window.showToast?.('Falta el correo del doctor.', { type: 'warn' }); return; }
+        const h1 = h1El.value.trim();
+        const h2 = h2El.value.trim();
+        if (!h1 || !h2) { window.showToast?.('Completá los dos horarios que vas a ofrecer.', { type: 'warn' }); return; }
+        // Inyectar los horarios en el cuerpo y el asunto (reemplazo de los
+        // marcadores). Luego, red de seguridad frontend: si quedó cualquier
+        // variable sin resolver ({{…}} o […]), no mandamos — el backend igual
+        // tiene la guarda dura, pero avisamos acá con un mensaje claro.
+        const inject = (s) => (s || '').split('{{HORARIO_1}}').join(h1).split('{{HORARIO_2}}').join(h2);
+        const subject = inject(subjectEl.value);
+        const message = inject(msgEl.value);
+        if (/[\[\]{}]/.test(subject) || /[\[\]{}]/.test(message)) {
+          window.showToast?.('Quedó una variable sin completar en el correo (algo entre { } o [ ]). Revisalo antes de mandar.', { type: 'warn', duration: 7000 });
+          return;
+        }
+        const templateId = ACT_EMAIL_TEMPLATE_ID;
         resendBtn.disabled = true;
         mailtoBtn.disabled = true;
+        // Guardar los datos del puente en el lead (best-effort, no bloquea).
+        _saveBridgeFields(leadId, email, gateEl.value.trim()).catch(() => {});
         try {
           const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/send-material'), {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -12268,6 +12323,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (lead.reviews) ratingReviews.push(`${lead.reviews} reseñas`);
       if (ratingReviews.length) rows.push(`<div><strong style="color:#FFB341;">${ratingReviews.join(' · ')}</strong></div>`);
       if (lead.email && !lead.email.includes('N/A')) rows.push(`<div><strong style="color:rgba(255,255,255,0.55);">✉</strong> ${escHtml(lead.email)}</div>`);
+      // Milestone v5.0: quién atendió (recepción) — sostiene el puente del correo.
+      if (lead.gatekeeperName) rows.push(`<div><strong style="color:rgba(255,255,255,0.55);">Atendió:</strong> ${escHtml(lead.gatekeeperName)}</div>`);
       // Notas previas (últimas 2)
       const recentNotes = (lead.notes || []).slice(-2);
       if (recentNotes.length) {
@@ -13726,6 +13783,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Default: mañana 10am hora local
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(10, 0, 0, 0);
       fechaInput.value = _toDatetimeLocal(m);
+      // Milestone v5.0 (MAIL-04b): prellenar los datos del puente con lo que ya
+      // tenga el lead — el operador solo completa lo que le falta al colgar.
+      const _cbLead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      const _cbEmail = document.getElementById('call-cb-email');
+      const _cbGate = document.getElementById('call-cb-gatekeeper');
+      if (_cbEmail) _cbEmail.value = (_cbLead && _cbLead.email) || '';
+      if (_cbGate) _cbGate.value = (_cbLead && _cbLead.gatekeeperName) || '';
       // [28-02] Calendario propio (D-01): reemplaza el datetime-local nativo.
       _dtPickerAttach(fechaInput, { getLead: () => _callsLeadsById.get(leadId) });
       // 2026-07-10: el checkbox "compartido" se removió del HTML (los leads no se
@@ -13792,6 +13856,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
           const data = await resp.json().catch(() => ({}));
+          // Milestone v5.0 (MAIL-04b): persistir los datos del puente al colgar,
+          // aparte y sin bloquear (si falla, el callback ya quedó guardado).
+          _saveBridgeFields(leadId, _cbEmail?.value, _cbGate?.value).catch(() => {});
           _flushPendingTranscription(leadId, 'callback_later').catch(e => console.warn('[transcribe]', e?.message));
           // Update optimista del cache ANTES de cerrar el modal. El poller del
           // Power Dialer (_pdHandleDisposition) lee lead.callbackAt para decidir si
@@ -14438,6 +14505,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     // ─── [32-03] ACT-PURE: FIN ───
 
+    // ─── [v5.0] BRIDGE-EMAIL-PURE: INICIO ───
+    // Milestone v5.0 (MAIL-06/07): el correo de presentación con el "puente" de
+    // la recepción. Una sola plantilla de EMAIL, de única vez. El cuerpo se arma
+    // por BLOQUES condicionales: cada dato ausente ELIMINA su bloque, ninguno
+    // deja hueco ni placeholder visible, y nada se estima. Copy cerrado con Nacho
+    // el 30/08 (sección 3 del doc): se pega tal cual, no se reescribe.
+    // Bloque puro (sin DOM, red ni almacenamiento del navegador) para que el
+    // LINT DE MARCA lo evalúe aislado, mismo patrón que ACT-PURE. Verifica: sin signos de
+    // apertura, sin guion largo, sin IA/WhatsApp/CRM/etc, sin precio, link
+    // vincca.co sin utm_, "Vincca" nunca en el párrafo de antigüedad.
+    const ACT_EMAIL_TEMPLATE_ID = 'presentacion_puente';
+
+    // Año de "atiende desde". foundedYear explícito (4 dígitos) gana; si no, se
+    // deriva de yearsActive (resta exacta, no es estimar ni redondear la
+    // antigüedad, que ya viene dada). '' = no hay dato → el párrafo no existe.
+    function _bridgeYear(lead) {
+      const l = lead || {};
+      const fy = typeof l.foundedYear === 'string' ? l.foundedYear.trim() : '';
+      if (/^\d{4}$/.test(fy)) return fy;
+      const ya = typeof l.yearsActive === 'number' ? l.yearsActive : null;
+      if (ya && ya > 0 && ya < 200) {
+        const y = new Date().getFullYear() - Math.round(ya);
+        if (y > 1900 && y <= new Date().getFullYear()) return String(y);
+      }
+      return '';
+    }
+
+    // La calculadora ES la home de vincca.co (no una sección aparte): un solo
+    // link. Único query param permitido: el país derivado de lead.country.
+    // NADA de b/a/t (la calc abre en cero, decisión de la fase 05) ni utm_.
+    function _bridgeCalcLink(lead) {
+      const country = lead && typeof lead.country === 'string' ? lead.country.trim() : '';
+      return country ? ('https://vincca.co?p=' + encodeURIComponent(country)) : 'https://vincca.co';
+    }
+
+    // Devuelve { subject, body }. opts: { horario1, horario2, firmante }. Los dos
+    // horarios los escribe el operador en el overlay (dependen de su agenda); si
+    // faltan, quedan como {{HORARIO_1}}/{{HORARIO_2}} literales para que la guarda
+    // dura del backend bloquee el envío (nunca sale un placeholder).
+    function _buildBridgeEmail(lead, opts) {
+      const o = opts || {};
+      const l = lead || {};
+      const doctorRaw = typeof l.doctor === 'string' ? l.doctor.trim() : '';
+      const doctor = (doctorRaw && !doctorRaw.toUpperCase().includes('N/A')) ? doctorRaw : '';
+      const clinica = (typeof l.name === 'string' && l.name.trim()) ? l.name.trim() : 'la clínica';
+      const ciudadTxt = (typeof l.city === 'string' && l.city.trim()) ? l.city.trim() : 'la zona';
+      const recepcion = typeof l.gatekeeperName === 'string' ? l.gatekeeperName.trim() : '';
+      const firmante = (o.firmante && String(o.firmante).trim()) || 'Ignacio';
+      const anio = _bridgeYear(l);
+      const link = _bridgeCalcLink(l);
+      const h1 = (o.horario1 || '').trim();
+      const h2 = (o.horario2 || '').trim();
+
+      // Asunto: con recepción, su nombre; sin ella, el ángulo del problema.
+      const subject = recepcion ? `${recepcion} nos dejó su correo` : 'Los pacientes que no volvieron';
+
+      const p = [];
+      p.push(doctor ? `Doctor ${doctor}, buenos días.` : 'Buenos días.');
+      p.push(`Soy ${firmante}, de Vincca.`);
+      if (recepcion) {
+        p.push(`Le escribo después de llamar a la clínica y hablar con ${recepcion}, de recepción. Me dejó su correo para contarle brevemente cómo ayudamos a clínicas de ${ciudadTxt} a recuperar y fidelizar pacientes.`);
+      } else {
+        p.push(`Le escribo después de llamar a la clínica esta mañana para contarle brevemente cómo ayudamos a clínicas de ${ciudadTxt} a recuperar y fidelizar pacientes.`);
+      }
+      p.push('Muchas clínicas siguen invirtiendo en captar pacientes nuevos mientras dejan sin trabajar a los que ya tienen: los que hace tiempo no vuelven, los tratamientos pendientes, los presupuestos que nunca se cerraron. Hoy hay clínicas que trabajan activamente esa base para recuperarlos y fidelizarlos, y de ahí salen los referidos.');
+      p.push('No cree que recuperar un paciente que ya conoce la clínica es más fácil que conseguir uno nuevo?');
+      if (anio) {
+        // La variable es la CLÍNICA, no "Vincca" (error de sustitución más caro).
+        p.push(`${clinica} atiende desde ${anio}, así que probablemente tenga una base importante de pacientes que ya los conocen.`);
+      }
+      p.push(`Le dejo una calculadora sencilla: ingresa la cantidad aproximada de pacientes de su base y en dos minutos estima lo que representa. ${link}`);
+      p.push('Si el número le llama la atención y quiere ver una alternativa más fácil y eficaz que hacerlo manualmente, le muestro en veinte minutos cómo lo están haciendo otras clínicas de su zona y cómo podrían ejecutarlo ustedes. Y si hoy no pueden, vemos si tiene sentido que avancemos nosotros.');
+      p.push(`Le queda mejor ${h1 || '{{HORARIO_1}}'} o ${h2 || '{{HORARIO_2}}'}?`);
+      p.push('Saludos.');
+
+      return { subject, body: p.join('\n\n') };
+    }
+    // ─── [v5.0] BRIDGE-EMAIL-PURE: FIN ───
+
     // Sprint 23: quick-picks típicos de callback. Devuelve {label, subtitle, date}.
     function _buildCallbackQuickPicks() {
       const now = new Date();
@@ -14645,11 +14791,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btn) { btn.disabled = false; btn.textContent = orig || 'brief IA'; }
     };
     // Contacto secundario: cargar el número que pasó la recepción (encargado/decisor).
+    // Milestone v5.0 (MAIL-04b): guardado "best-effort" de los datos del puente
+    // (correo del doctor + quién atendió) capturados al colgar en un modal de
+    // disposición. Va aparte del POST de disposición (endpoint alt-contact) para
+    // NO tocar el contrato de call-disposition, que es compartido con el agente
+    // de voz. Nunca bloquea el flujo: si el PUT falla, la disposición ya se
+    // guardó igual. Solo pega si algo cambió respecto de lo que ya tiene el lead.
+    window._saveBridgeFields = async (leadId, email, gatekeeperName) => {
+      const lead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      const em = (email || '').trim();
+      const gk = (gatekeeperName || '').trim();
+      const curEmail = (lead && lead.email) || '';
+      const curGate = (lead && lead.gatekeeperName) || '';
+      if (em === curEmail && gk === curGate) return; // nada cambió
+      const body = {};
+      if (em !== curEmail) body.email = em;
+      if (gk !== curGate) body.gatekeeperName = gk;
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { window.showToast?.(d.error || 'No se pudo guardar el dato del correo.', { type: 'warn' }); return; }
+        if (window._leadStoreApply) window._leadStoreApply(leadId, { email: d.email, gatekeeperName: d.gatekeeperName });
+      } catch (e) { window.showToast?.('No se pudo guardar el dato del correo (red).', { type: 'warn' }); }
+    };
+
     window._callsAltContact = (leadId) => {
       const lead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
       const curPhone = (lead && lead.altPhone) || '';
       const curLabel = (lead && lead.altPhoneLabel) || '';
       const curEmail = (lead && lead.email) || '';
+      const curGate = (lead && lead.gatekeeperName) || '';
       const old = document.getElementById('alt-contact-overlay'); if (old) old.remove();
       const ov = document.createElement('div');
       ov.id = 'alt-contact-overlay';
@@ -14666,7 +14837,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Quién es</label>
           <input id="alt-contact-label" type="text" value="${escHtml(curLabel)}" placeholder="Encargado, Dra. Pérez, Recepción…" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
           <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Email del lead (opcional)</label>
-          <input id="alt-contact-email" type="email" value="${escHtml(curEmail)}" placeholder="contacto@clinica.com" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:18px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
+          <input id="alt-contact-email" type="email" value="${escHtml(curEmail)}" placeholder="contacto@clinica.com" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Quién atendió (recepción)</label>
+          <input id="alt-contact-gatekeeper" type="text" value="${escHtml(curGate)}" placeholder="Sandra, María…" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:18px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
           <div style="display:flex; gap:8px; align-items:center;">
             <button type="button" id="alt-contact-save" style="flex:1; padding:11px; background:var(--accent); color:#fff; border:none; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;">Guardar</button>
             ${curPhone ? `<button type="button" id="alt-contact-clear" style="padding:11px 14px; background:transparent; color:#f47272; border:1px solid rgba(244,114,114,0.4); border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit;">Borrar</button>` : ''}
@@ -14688,14 +14861,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           phoneInput.focus();
         };
       });
-      const doSave = async (phone, label, email) => {
+      const doSave = async (phone, label, email, gatekeeperName) => {
         try {
-          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, label, email }) });
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, label, email, gatekeeperName }) });
           const d = await r.json();
           if (!r.ok) { window.showToast?.(d.error || 'Error', { type: 'error' }); return; }
-          if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel, email: d.email });
+          if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel, email: d.email, gatekeeperName: d.gatekeeperName });
           window.showToast?.(d.altPhone || d.email ? 'Contacto guardado' : 'Contacto borrado', { type: 'success' });
-          if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _currentCallLead.email = d.email; _renderLeadFile(_currentCallLead); }
+          if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _currentCallLead.email = d.email; _currentCallLead.gatekeeperName = d.gatekeeperName; _renderLeadFile(_currentCallLead); }
           if (typeof renderCallsList === 'function') _refreshLeadPanels(leadId);
           if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
           close();
@@ -14708,9 +14881,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       // rompería el handler / permitiría inyección. Un teléfono sólo tiene dígitos
       // y '+', así que el whitelist es inocuo y cierra el vector en el origen.
       const _emailVal = () => (document.getElementById('alt-contact-email').value || '').trim();
-      document.getElementById('alt-contact-save').onclick = () => doSave((phoneInput.value || '').replace(/[^\d+]/g, '').trim(), (document.getElementById('alt-contact-label').value || '').trim(), _emailVal());
-      // "Borrar" borra solo el teléfono/label del contacto; el email queda como esté tipeado.
-      const clearBtn = document.getElementById('alt-contact-clear'); if (clearBtn) clearBtn.onclick = () => doSave('', '', _emailVal());
+      const _gateVal = () => (document.getElementById('alt-contact-gatekeeper').value || '').trim();
+      document.getElementById('alt-contact-save').onclick = () => doSave((phoneInput.value || '').replace(/[^\d+]/g, '').trim(), (document.getElementById('alt-contact-label').value || '').trim(), _emailVal(), _gateVal());
+      // "Borrar" borra solo el teléfono/label del contacto; el email y quién atendió quedan como estén tipeados.
+      const clearBtn = document.getElementById('alt-contact-clear'); if (clearBtn) clearBtn.onclick = () => doSave('', '', _emailVal(), _gateVal());
       phoneInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('alt-contact-save').click(); });
     };
     // Generar el brief del lead actual del Power Dialer en el momento (admin).

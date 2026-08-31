@@ -7,6 +7,7 @@ import express from "express";
 import compression from "compression";
 import OpenAI from "openai";
 import crypto from "crypto";
+import nodemailer from "nodemailer";
 import { mountWa } from "./src/wa/index.js";
 import { enrichFromWebsite, enrichFromNPI, enrichFromMetaAdLibrary, enrichDomainAge, classifyEmailType, isBlockedHost, extractEmailFromHtml, normalizeEmailCandidate } from "./src/enrichment.js";
 
@@ -704,6 +705,12 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.facebook !== 'string') lead.facebook = '';
   if (typeof lead.email !== 'string') lead.email = '';
   if (typeof lead.doctor !== 'string') lead.doctor = '';
+  // Milestone v5.0 (MAIL-04): nombre de quien atendió la llamada (la recepción).
+  // Sostiene el "puente" del correo de presentación: le escribo al doctor
+  // diciendo que hablé con {gatekeeperName} y me dejó su correo. Se puebla desde
+  // el webhook del agente de voz, el modal de disposición humana y la edición a
+  // mano de la ficha. NO se migra de las notas viejas (backfill no vale la pena).
+  if (typeof lead.gatekeeperName !== 'string') lead.gatekeeperName = '';
   // De dónde salió lead.doctor (parser/parser-debil/web-ai/npi/manual). Guard
   // por whitelist (DOCTOR_SOURCES, ~5343 más abajo) — cualquier valor fuera
   // de la lista se coercione a '' en vez de quedar guardado tal cual.
@@ -11678,8 +11685,13 @@ app.put('/api/setters/leads/:id/alt-contact', requireAuth, (req, res) => {
     }
     lead.email = email;
   }
+  // Milestone v5.0 (MAIL-04c): "quién atendió" editable a mano. Solo se toca si
+  // el body trae el campo (string); omitido = no modificar. Vacío = borrar.
+  if (typeof req.body.gatekeeperName === 'string') {
+    lead.gatekeeperName = req.body.gatekeeperName.trim().slice(0, 120);
+  }
   saveSettersData(data);
-  res.json({ ok: true, altPhone: lead.altPhone, altPhoneLabel: lead.altPhoneLabel, email: lead.email || '' });
+  res.json({ ok: true, altPhone: lead.altPhone, altPhoneLabel: lead.altPhoneLabel, email: lead.email || '', gatekeeperName: lead.gatekeeperName || '' });
 });
 
 // El botón "Buscar Instagram del Dr." (ficha del lead / Power Dialer) abre una
@@ -12539,6 +12551,14 @@ function _closeCommitment(lead, estado, nowIso, closedBy) {
 // claves; su test verifica la paridad leyendo los dos archivos como texto.
 const ACT_WA_TEMPLATE_IDS = new Set(['post_llamada', 'envio_info', 'reconfirmar_reunion']);
 
+// Milestone v5.0 (MAIL-06): plantillas de EMAIL. Un solo id — el correo de
+// presentación con el "puente" de la recepción es de única vez, no una
+// secuencia ni un set por escenario. El frontend espeja esta clave y su test
+// verifica la paridad, igual que con las de WhatsApp. Set aparte porque
+// _actRegisterSendEvent valida según el canal: un templateId de email nunca
+// tuvo que pasar por el Set de WhatsApp (antes se guardaba '' y se perdía).
+const ACT_EMAIL_TEMPLATE_IDS = new Set(['presentacion_puente']);
+
 // Canales por los que se puede registrar un envío de material — ambos ya
 // están en NEXT_ACTION_CANALES, no hace falta sumar nada ahí.
 const ACT_SEND_CANALES = new Set(['whatsapp', 'email']);
@@ -12569,6 +12589,79 @@ function _actEmailHtml(text) {
     .split('\n').join('<br>');
 }
 
+// Milestone v5.0 (MAIL-08): cada párrafo del cuerpo (bloques separados por línea
+// en blanco) va envuelto en un <p style="margin:0 0 16px 0;">, con el texto
+// escapado por _actEmailHtml. Los \n simples dentro de un párrafo caen a <br>.
+function _actEmailParagraphs(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter((p) => p)
+    .map((p) => `<p style="margin:0 0 16px 0;">${_actEmailHtml(p)}</p>`)
+    .join('\n');
+}
+
+// Milestone v5.0 (MAIL-08): membretado de marca Vincca (sección 2 del doc del
+// 30/08). Tablas + estilos inline porque Gmail/Outlook descartan el CSS externo;
+// tipografías de marca primero, caen a las del sistema. Cero imágenes, cero
+// botones, cero beacons de tracking (D-18). Dos elementos bronce (el filete y la
+// V del wordmark), que es el tope que fija la marca. {{CUERPO}} es lo único que
+// varía; NO se toca el resto del membretado.
+function _brandedEmailHtml(bodyText) {
+  const cuerpo = _actEmailParagraphs(bodyText);
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+       style="background:#F1EDE3; margin:0; padding:32px 12px;">
+  <tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+           style="max-width:600px; background:#FAF7F0; border:1px solid #E3DFD4;">
+
+      <!-- filete bronce (1 de 2) -->
+      <tr><td style="height:3px; background:#A67C1B; line-height:3px;">&nbsp;</td></tr>
+
+      <!-- wordmark (2 de 2) -->
+      <tr><td style="padding:26px 34px 0 34px;">
+        <span style="font-family:'Lexend',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+                     font-size:17px; font-weight:600; letter-spacing:-0.01em; color:#1A1D24;">
+          <span style="color:#A67C1B;">V</span>incca
+        </span>
+      </td></tr>
+
+      <!-- cuerpo -->
+      <tr><td style="padding:22px 34px 8px 34px;
+                     font-family:'Source Sans 3',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+                     font-size:17px; line-height:1.62; color:#1A1D24;">
+        ${cuerpo}
+      </td></tr>
+
+      <!-- firma -->
+      <tr><td style="padding:8px 34px 30px 34px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="border-top:1px solid #E3DFD4; padding-top:16px;
+                         font-family:'Source Sans 3',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+                         font-size:15px; line-height:1.6; color:#5C574C;">
+            <strong style="color:#1A1D24; font-weight:600;">Ignacio Ana</strong><br>
+            Vincca<br>
+            <a href="https://vincca.co" style="color:#5C574C; text-decoration:underline;">vincca.co</a><br>
+            <a href="https://wa.me/5492213508505" style="color:#5C574C; text-decoration:underline;">WhatsApp</a><br>
+            <a href="https://www.linkedin.com/in/ignacio-ana" style="color:#5C574C; text-decoration:underline;">LinkedIn</a>
+          </td></tr>
+        </table>
+      </td></tr>
+
+    </table>
+  </td></tr>
+</table>`;
+}
+
+// Milestone v5.0 (MAIL-09, guarda dura): el ÚLTIMO check antes de mandar. Un
+// correo que sale con "[DÍA] a las [HORA]" o "{{HORARIO_1}}" literal quema la
+// clínica. Devuelve true si el texto tiene corchetes o llaves = variable sin
+// resolver. No lanza.
+function _hasUnresolvedPlaceholder(text) {
+  return typeof text === 'string' && /[\[\]{}]/.test(text);
+}
+
 // D-04/D-05: registro compartido por WhatsApp (32-01) y email (32-02).
 // spec = { canal, templateId, to, byId, byName }. Devuelve
 // { commitment, nextAction, terminal }.
@@ -12577,7 +12670,9 @@ function _actRegisterSendEvent(lead, spec, nowIso) {
   const canal = ACT_SEND_CANALES.has(s.canal) ? s.canal : 'whatsapp';
   // D-07: se guarda cuál plantilla se usó; un id desconocido NO invalida el
   // envío, solo se guarda como '' (whitelist-and-coerce, nunca bloquea).
-  const templateId = ACT_WA_TEMPLATE_IDS.has(s.templateId) ? s.templateId : '';
+  // MAIL-06: el Set válido depende del canal — email valida contra el suyo.
+  const templateSet = canal === 'email' ? ACT_EMAIL_TEMPLATE_IDS : ACT_WA_TEMPLATE_IDS;
+  const templateId = templateSet.has(s.templateId) ? s.templateId : '';
   const to = String(s.to || '').slice(0, 40);
 
   if (!Array.isArray(lead.interactions)) lead.interactions = [];
@@ -13510,6 +13605,58 @@ async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, icsCo
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// Milestone v5.0 (Fase 39 / MAIL-01): envío del correo AL PROSPECTO por el
+// SMTP del Google Workspace de vincca.co, NO por Resend. Decidido el 30/08:
+// para uno-a-uno después de una llamada, Gmail gana en lo que importa (queda
+// en Enviados, la respuesta cae en el mismo hilo, dominio ya autenticado por
+// Workspace → mejor entregabilidad, cero DNS en GoDaddy).
+//
+// Resend NO se toca: sigue sirviendo a las invitaciones del equipo y al
+// reporte semanal. Lo único que cambia de proveedor es el envío al prospecto
+// (send-material). Misma forma de retorno { sent, reason } que
+// _sendPlaceholderEmail, así el call site conserva su contrato (incluido el
+// 409-con-mailtoUrl cuando faltan credenciales).
+//
+// El From tiene que ser la casilla autenticada (GMAIL_USER) o un alias dado
+// de alta en Gmail bajo "Enviar como" — Google reescribe cualquier otro.
+// Se manda text + html: un correo sin parte text/plain puntúa peor en los
+// filtros (MAIL-03).
+async function _sendGmailEmail({ toEmail, subject, htmlBody, textBody }) {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return { sent: false, reason: 'GMAIL_USER/GMAIL_APP_PASSWORD no configuradas' };
+  const fromName = process.env.GMAIL_FROM_NAME;
+  const from = fromName ? `${fromName} <${user}>` : user;
+  try {
+    const transport = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // TLS directo
+      auth: { user, pass },
+      // Forzar IPv4: en redes sin ruta IPv6 saliente, Node resuelve el SMTP de
+      // Gmail a una IPv6 y falla con ECONNREFUSED/ENOENT antes de intentar la
+      // IPv4 (que sí conecta). IPv4 es la ruta estándar y estable para SMTP.
+      family: 4,
+    });
+    const info = await transport.sendMail({
+      from,
+      to: toEmail,
+      subject,
+      text: typeof textBody === 'string' ? textBody : undefined,
+      html: htmlBody,
+    });
+    // sendMail resuelve solo si el SMTP aceptó el mensaje (250). Un destinatario
+    // rechazado queda en info.rejected → lo tratamos como no-enviado.
+    if (Array.isArray(info?.rejected) && info.rejected.length) {
+      return { sent: false, reason: `Rechazado: ${info.rejected.join(', ')}` };
+    }
+    return { sent: true };
+  } catch (e) {
+    return { sent: false, reason: e.message };
+  }
+}
+
 // POST /api/setters/leads/:id/send-placeholder — body { when (ISO), durationMins?, email?, customNote? }
 // El user del SCM (vos) sos el organizer; el lead es el attendee.
 // 1) Genera .ics tentativo. 2) Lo manda al email del prospect con texto custom.
@@ -13640,6 +13787,14 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
   if (!cleanMessage) {
     return res.status(400).json({ error: 'El mensaje no puede estar vacío.' });
   }
+  // MAIL-09 (guarda dura): el último check antes de mandar. Bloquea el envío si
+  // el asunto o el cuerpo todavía tienen corchetes/llaves = variable sin
+  // resolver (ej: "{{HORARIO_1}}" o "[DÍA]"). Aplica a las DOS vías: un mailto
+  // con un placeholder literal quema igual. Un correo de presentación a un
+  // doctor nunca lleva corchetes/llaves legítimos.
+  if (_hasUnresolvedPlaceholder(cleanSubject) || _hasUnresolvedPlaceholder(cleanMessage)) {
+    return res.status(400).json({ error: 'El correo tiene una variable sin completar (algo entre corchetes o llaves). Revisá el asunto y el cuerpo antes de mandar.' });
+  }
 
   // Se devuelve en TODAS las respuestas (200, 409) para que el frontend
   // pueda ofrecer la salida manual sin recalcular nada.
@@ -13647,7 +13802,11 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
 
   let sent = false;
   if (cleanVia === 'resend') {
-    if (!process.env.RESEND_API_KEY) {
+    // Milestone v5.0 (MAIL-02): el correo AL PROSPECTO sale por Gmail Workspace,
+    // no por Resend. El nombre de vía 'resend' y el flag `resendUnavailable` se
+    // conservan a propósito — es el contrato que el frontend ya conoce (cae al
+    // mailto ante el 409); acá solo cambió el proveedor por dentro.
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
       // Nada salió — cortar ACÁ, antes de registrar nada.
       return res.status(409).json({
         error: 'El envío por el sistema no está configurado. Podés abrirlo en tu cliente de mail.',
@@ -13655,20 +13814,18 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
         mailtoUrl,
       });
     }
-    // Mismo esqueleto que send-placeholder (más arriba), con el cuerpo
-    // escapado por _actEmailHtml. Cero imágenes/beacons embebidos (D-18: no
-    // se mide si el prospecto abrió el mail — ver la cabecera del endpoint).
-    const htmlBody = `
-      <div style="font-family:sans-serif; max-width:520px; margin:0 auto; padding:24px; color:#1e1f20;">
-        <p>Hola ${_icsEscape(toName)},</p>
-        <p>${_actEmailHtml(cleanMessage)}</p>
-        <p style="color:#666; font-size:13px; margin-top:24px;">— ${_actEmailHtml(u.name || 'Equipo')}</p>
-      </div>`;
-    const result = await _sendPlaceholderEmail({
-      toEmail, toName,
+    // MAIL-08: membretado de marca Vincca. El cuerpo (con el saludo ya adentro
+    // y la firma en el membretado) pasa por _actEmailParagraphs → _actEmailHtml
+    // (escapa + \n→<br>). Cero imágenes/beacons embebidos (D-18: no se mide si
+    // el prospecto abrió el mail).
+    const htmlBody = _brandedEmailHtml(cleanMessage);
+    const result = await _sendGmailEmail({
+      toEmail,
       subject: cleanSubject,
       htmlBody,
-      fromOverride: process.env.PLACEHOLDER_FROM_EMAIL || undefined,
+      // MAIL-03: parte text/plain = el cuerpo crudo que tipeó el SDR, antes de
+      // pasar por _actEmailHtml. Un mail sin text/plain puntúa peor en filtros.
+      textBody: cleanMessage,
     });
     if (!result.sent) {
       // Nada salió — cortar ACÁ, el registro no puede decir que sí.
@@ -19908,14 +20065,18 @@ async function _retellProcessCallEvent(event, call, opts) {
         lead.doctor = extraction.doctor_name.trim().slice(0, 200);
       }
       if (typeof extraction.recepcionista_nombre === 'string' && extraction.recepcionista_nombre.trim()) {
+        const recep = extraction.recepcionista_nombre.trim().slice(0, 200);
         if (!Array.isArray(lead.notes)) lead.notes = [];
         lead.notes.push({
           id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          text: `Recepcionista: ${extraction.recepcionista_nombre.trim().slice(0, 200)}`,
+          text: `Recepcionista: ${recep}`,
           by: 'Agente IA',
           date: nowIso,
         });
         if (lead.notes.length > 100) lead.notes = lead.notes.slice(-100);
+        // Milestone v5.0 (MAIL-04a): además de la nota, promover a campo — misma
+        // política de no-pisar dato ya cargado que doctor/email (nota #111).
+        if (!lead.gatekeeperName) lead.gatekeeperName = recep;
       }
       if (typeof extraction.email === 'string' && extraction.email.trim() && !lead.email) {
         const candidate = extraction.email.trim().slice(0, 200);

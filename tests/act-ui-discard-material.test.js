@@ -341,11 +341,29 @@ describe("Material por email (ACT-05/D-17/D-18)", () => {
     expect(finallyRe.test(body)).toBe(true);
   });
 
-  it("reusa el catálogo ACT_WA_TEMPLATES + _actTemplateById + _interpolateScript (mismo material por los dos canales que WhatsApp)", () => {
+  // Milestone v5.0 (Fase 41): el overlay de email dejó de reusar el catálogo de
+  // WhatsApp — ahora arma el correo de presentación con el puente (una sola
+  // plantilla de email, de única vez) vía _buildBridgeEmail + los dos campos de
+  // horario que completa el operador.
+  it("arma el correo del puente con _buildBridgeEmail y templateId ACT_EMAIL_TEMPLATE_ID (no el catálogo de WhatsApp)", () => {
     const body = materialBody();
-    expect(body).toContain("ACT_WA_TEMPLATES.map(");
-    expect(body).toContain("_actTemplateById(defaultKey).body");
-    expect(body).toContain("_interpolateScript(");
+    expect(body).toContain("_buildBridgeEmail(");
+    expect(body).toContain("ACT_EMAIL_TEMPLATE_ID");
+    expect(body).not.toContain("ACT_WA_TEMPLATES.map(");
+    expect(body).not.toContain("_interpolateScript(");
+  });
+
+  it("tiene los dos campos de horario obligatorios (act-mat-h1 / act-mat-h2) y valida que estén completos", () => {
+    const body = materialBody();
+    expect(body).toContain("act-mat-h1");
+    expect(body).toContain("act-mat-h2");
+    // No manda si falta alguno de los dos horarios.
+    expect(body).toMatch(/if \(!h1 \|\| !h2\)/);
+  });
+
+  it("red de seguridad frontend: no manda si quedó una variable sin resolver ({ } o [ ])", () => {
+    const body = materialBody();
+    expect(body).toContain("/[\\[\\]{}]/"); // el regex /[\[\]{}]/ literal en el fuente
   });
 
   it("el overlay usa z-index:10060 (o mayor)", () => {

@@ -182,10 +182,11 @@ describe('ventana', () => {
     const conDefault = runCliJson(['--file', file]);
     const conSiete = runCliJson(['--days', '7', '--file', file]);
     // 'hasta' es el instante en que corrió cada invocación — puede diferir
-    // en milisegundos entre las dos llamadas al CLI, así que se compara todo
-    // lo demás.
-    const { hasta: h1, ...restoDefault } = conDefault;
-    const { hasta: h2, ...restoSiete } = conSiete;
+    // en milisegundos entre las dos llamadas al CLI. 'desde' se deriva de ese
+    // mismo instante (hasta - 7 días), así que difiere por lo mismo. Se
+    // excluyen ambos y se compara todo lo demás (fix del flaky de reloj).
+    const { hasta: h1, desde: d1, ...restoDefault } = conDefault;
+    const { hasta: h2, desde: d2, ...restoSiete } = conSiete;
     expect(restoDefault).toEqual(restoSiete);
   });
 

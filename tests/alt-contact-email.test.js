@@ -81,3 +81,32 @@ describe("alt-contact con email", () => {
     expect(r.status).toBe(403);
   });
 });
+
+// Milestone v5.0 (MAIL-04c): "quién atendió" editable a mano por el mismo endpoint.
+describe("alt-contact con gatekeeperName", () => {
+  it("guarda gatekeeperName y lo devuelve", async () => {
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ gatekeeperName: "Sandra" });
+    expect(r.status).toBe(200);
+    expect(r.body.gatekeeperName).toBe("Sandra");
+    const saved = JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8"));
+    expect(saved.leads.l_mine.gatekeeperName).toBe("Sandra");
+  });
+  it("gatekeeperName omitido en el body NO pisa el existente", async () => {
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ email: "otro@clinica.com" });
+    expect(r.status).toBe(200);
+    expect(r.body.gatekeeperName).toBe("Sandra");
+  });
+  it("gatekeeperName vacío explícito lo borra", async () => {
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ gatekeeperName: "" });
+    expect(r.status).toBe(200);
+    expect(r.body.gatekeeperName).toBe("");
+  });
+  it("default: un lead recién tocado tiene gatekeeperName '' (ensureLeadDefaults)", async () => {
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie).send({ label: "x" });
+    expect(r.status).toBe(200);
+    expect(typeof r.body.gatekeeperName).toBe("string");
+  });
+});

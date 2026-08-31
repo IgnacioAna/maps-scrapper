@@ -1622,6 +1622,12 @@
             <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">O fecha exacta</label>
             <input type="datetime-local" id="call-cb-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
             <!-- 2026-07-10: checkbox "callback compartido" removido a pedido del user — los leads no se comparten entre SDRs. El backend conserva el soporte por si se reactiva. -->
+            <!-- Milestone v5.0 (MAIL-04b): capturar al colgar los dos datos frescos para el correo puente. Se guardan aparte (alt-contact), no bloquean el callback. -->
+            <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-subtle);">
+              <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:8px; font-weight:600;">Para el correo (opcional)</label>
+              <input type="email" id="call-cb-email" placeholder="Correo directo del doctor" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:8px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+              <input type="text" id="call-cb-gatekeeper" placeholder="Quién atendió (recepción)" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+            </div>
             <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
               <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-callback-modal').classList.add('hidden')">Cancelar</button>
               <button class="btn-primary pill-btn" id="call-cb-confirm">Programar</button>
@@ -3754,7 +3760,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260823e"></script>
+  <script type="module" src="/app.js?v=20260830a"></script>
   <script type="module" src="/wa.js?v=20260815c"></script>
 </body>
 </html>
