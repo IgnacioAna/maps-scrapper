@@ -13628,40 +13628,67 @@ async function _sendGmailEmail({ toEmail, subject, htmlBody, textBody }) {
   if (!user || !pass) return { sent: false, reason: 'GMAIL_USER/GMAIL_APP_PASSWORD no configuradas' };
   const fromName = process.env.GMAIL_FROM_NAME;
   const from = fromName ? `${fromName} <${user}>` : user;
-  try {
-    const transport = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // TLS directo
-      auth: { user, pass },
-      // Forzar IPv4: en redes sin ruta IPv6 saliente, Node resuelve el SMTP de
-      // Gmail a una IPv6 y falla con ECONNREFUSED/ENOENT antes de intentar la
-      // IPv4 (que sí conecta). IPv4 es la ruta estándar y estable para SMTP.
-      family: 4,
-      // Timeouts: sin esto, si el 465 saliente está bloqueado o Gmail no
-      // responde, el envío se cuelga ~2 min (default de nodemailer) y el botón
-      // del overlay queda tildado. Con esto falla rápido y el frontend ofrece
-      // el mailto / muestra el error.
-      connectionTimeout: 15000,
-      greetingTimeout: 10000,
-      socketTimeout: 20000,
-    });
-    const info = await transport.sendMail({
-      from,
-      to: toEmail,
-      subject,
-      text: typeof textBody === 'string' ? textBody : undefined,
-      html: htmlBody,
-    });
-    // sendMail resuelve solo si el SMTP aceptó el mensaje (250). Un destinatario
-    // rechazado queda en info.rejected → lo tratamos como no-enviado.
-    if (Array.isArray(info?.rejected) && info.rejected.length) {
-      return { sent: false, reason: `Rechazado: ${info.rejected.join(', ')}` };
-    }
-    return { sent: true };
-  } catch (e) {
-    return { sent: false, reason: e.message };
+
+  // La ruta que conecta al SMTP de Gmail depende del entorno: en una red sin
+  // IPv6 saliente (máquina local con proxy) hay que forzar IPv4 y el 465 anda;
+  // en Railway el 465 con IPv4 forzado dio "Connection timeout", así que puede
+  // necesitar IPv6/DNS default o el puerto 587 (submission/STARTTLS). En vez de
+  // adivinar el entorno, se prueban varias combinaciones y se usa la primera
+  // que MANDA. Timeouts cortos para que el barrido no acumule demasiado.
+  // GMAIL_SMTP_PORT / GMAIL_SMTP_FAMILY (env, opcionales) permiten fijar una
+  // combinación si algún día se quiere saltear el barrido.
+  const forcedPort = parseInt(process.env.GMAIL_SMTP_PORT, 10);
+  const forcedFamily = parseInt(process.env.GMAIL_SMTP_FAMILY, 10);
+  let variants = [
+    { port: 465, secure: true },            // TLS directo, ruta que elija el DNS
+    { port: 587, secure: false },           // STARTTLS (submission)
+    { port: 465, secure: true, family: 4 }, // IPv4 forzado (local sin IPv6)
+    { port: 587, secure: false, family: 4 },
+  ];
+  if (Number.isFinite(forcedPort)) {
+    variants = variants.filter((v) => v.port === forcedPort);
+    if (Number.isFinite(forcedFamily)) variants = variants.map((v) => ({ ...v, family: forcedFamily }));
   }
+
+  let lastErr = '';
+  for (const v of variants) {
+    try {
+      const opts = {
+        host: 'smtp.gmail.com',
+        port: v.port,
+        secure: v.secure,
+        auth: { user, pass },
+        connectionTimeout: 12000,
+        greetingTimeout: 8000,
+        socketTimeout: 15000,
+      };
+      if (v.family) opts.family = v.family;
+      const transport = nodemailer.createTransport(opts);
+      const info = await transport.sendMail({
+        from,
+        to: toEmail,
+        subject,
+        text: typeof textBody === 'string' ? textBody : undefined,
+        html: htmlBody,
+      });
+      // sendMail resuelve solo si el SMTP aceptó el mensaje (250). Un destinatario
+      // rechazado queda en info.rejected → lo tratamos como no-enviado.
+      if (Array.isArray(info?.rejected) && info.rejected.length) {
+        return { sent: false, reason: `Rechazado: ${info.rejected.join(', ')}` };
+      }
+      console.log(`[gmail] enviado por :${v.port}${v.family ? ' (IPv' + v.family + ')' : ''}`);
+      return { sent: true };
+    } catch (e) {
+      lastErr = `:${v.port}${v.family ? '/IPv' + v.family : ''} → ${e.message}`;
+      // Un fallo de AUTENTICACIÓN no se arregla cambiando de puerto/familia:
+      // cortar el barrido y reportar (la app password está mal / 2FA off).
+      if (e && (e.responseCode === 535 || /invalid login|username and password not accepted|badcredentials/i.test(e.message || ''))) {
+        return { sent: false, reason: `Auth Gmail rechazada: ${e.message}` };
+      }
+      // Cualquier otro error (timeout/conexión) → probar la siguiente variante.
+    }
+  }
+  return { sent: false, reason: `No se pudo conectar al SMTP de Gmail. Último intento ${lastErr}` };
 }
 
 // POST /api/setters/leads/:id/send-placeholder — body { when (ISO), durationMins?, email?, customNote? }

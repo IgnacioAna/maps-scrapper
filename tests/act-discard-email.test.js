@@ -373,19 +373,24 @@ describe('Material por email (ACT-05)', () => {
     expect(block).toContain('GMAIL_APP_PASSWORD');
   });
 
-  it('22. El helper _sendGmailEmail existe y usa smtp.gmail.com por 465/TLS con GMAIL_USER/GMAIL_APP_PASSWORD', () => {
+  it('22. El helper _sendGmailEmail existe, usa smtp.gmail.com con GMAIL_USER/GMAIL_APP_PASSWORD y barre puertos 465/587', () => {
     const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
     const start = src.indexOf('async function _sendGmailEmail(');
     expect(start).toBeGreaterThan(-1);
-    const block = src.slice(start, start + 1400);
+    const end = src.indexOf('\n}\n', start);
+    const block = src.slice(start, end > start ? end : start + 3200);
     expect(block).toContain('smtp.gmail.com');
-    expect(block).toContain('port: 465');
     expect(block).toContain('process.env.GMAIL_USER');
     expect(block).toContain('process.env.GMAIL_APP_PASSWORD');
-    // Contrato preservado: misma forma de retorno { sent, reason } y el From es
-    // la casilla autenticada (Google reescribe cualquier otro).
+    // Barrido de conexión: prueba 465 (TLS directo) y 587 (STARTTLS) hasta que
+    // una mande — Railway dio timeout con IPv4 forzado en 465.
+    expect(block).toContain('port: 465');
+    expect(block).toContain('port: 587');
+    // Contrato preservado: misma forma de retorno { sent, reason }.
     expect(block).toContain('sent: false');
     expect(block).toContain('sent: true');
+    // Un fallo de auth corta el barrido (no se arregla cambiando de puerto).
+    expect(block).toMatch(/responseCode === 535|Auth Gmail rechazada/);
   });
 
   it('23. GUARDA DURA (MAIL-09): via:"mailto" con {{HORARIO_1}} sin resolver → 400, no registra', async () => {
