@@ -9486,6 +9486,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const templateId = ACT_EMAIL_TEMPLATE_ID;
         resendBtn.disabled = true;
         mailtoBtn.disabled = true;
+        // Feedback visual mientras se manda (el envío por Gmail puede tardar
+        // unos segundos) — sin esto el botón parece tildado.
+        const _sendingBtn = via === 'mailto' ? mailtoBtn : resendBtn;
+        const _sendingLabel = _sendingBtn.textContent;
+        _sendingBtn.textContent = via === 'mailto' ? 'Abriendo…' : 'Mandando…';
         // Guardar los datos del puente en el lead (best-effort, no bloquea).
         _saveBridgeFields(leadId, email, gateEl.value.trim()).catch(() => {});
         try {
@@ -9522,6 +9527,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } finally {
           resendBtn.disabled = false;
           mailtoBtn.disabled = false;
+          _sendingBtn.textContent = _sendingLabel;
           close();
           _refreshLeadPanels(leadId);
         }

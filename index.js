@@ -13638,6 +13638,13 @@ async function _sendGmailEmail({ toEmail, subject, htmlBody, textBody }) {
       // Gmail a una IPv6 y falla con ECONNREFUSED/ENOENT antes de intentar la
       // IPv4 (que sí conecta). IPv4 es la ruta estándar y estable para SMTP.
       family: 4,
+      // Timeouts: sin esto, si el 465 saliente está bloqueado o Gmail no
+      // responde, el envío se cuelga ~2 min (default de nodemailer) y el botón
+      // del overlay queda tildado. Con esto falla rápido y el frontend ofrece
+      // el mailto / muestra el error.
+      connectionTimeout: 15000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
     });
     const info = await transport.sendMail({
       from,
