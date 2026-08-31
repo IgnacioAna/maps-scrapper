@@ -34,7 +34,10 @@ Railway escucha, actualizar este doc inmediatamente.
 - `MERCURY_API_KEY` - Inception Labs (IA primaria)
 - `QWEN_API_KEY` - OpenRouter Qwen (IA fallback)
 - `APIFY_TOKEN` - Apify (Instagram Scraper)
-- `RESEND_API_KEY` - Resend (envío de invitaciones por email)
+- `RESEND_API_KEY` - Resend (invitaciones del equipo + reporte semanal — NO el correo al prospecto)
+- `GMAIL_USER` - **Milestone v5.0**. Casilla del Google Workspace de vincca.co (`ignacio@vincca.co`). Sin ella + `GMAIL_APP_PASSWORD`, `send-material` cae al 409-mailto y el correo del puente NO sale por Gmail.
+- `GMAIL_APP_PASSWORD` - **Milestone v5.0**. Contraseña de aplicación de 16 chars (sin espacios) de esa casilla.
+- `GMAIL_FROM_NAME` - Opcional. Nombre visible del remitente (`Ignacio Ana`). Sin ella, el From sale como `ignacio@vincca.co` a secas.
 - `JWT_SECRET` - secret para JWT del módulo WA (si no está, deriva de ADMIN_PASSWORD)
 - `TELNYX_API_KEY` - **Recomendado**. Si está seteada, sobrescribe la del JSON y bloquea edición desde panel admin
 - `TELNYX_SIP_USERNAME` - **Recomendado**. Idem (env > JSON)
