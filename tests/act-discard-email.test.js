@@ -435,9 +435,11 @@ describe('Material por email (ACT-05)', () => {
     expect(bBlock).toContain('#A67C1B');       // acento bronce (44px) + V del wordmark
     expect(bBlock).toContain('>V</span>');     // wordmark Vincca
     expect(bBlock).toContain('Ignacio Ana');
-    // A lo sumo 2 links (varios links = señal de promoción).
+    // Firma con hasta 3 links (vincca.co + WhatsApp + LinkedIn). El riesgo de
+    // Promociones lo dominaba la tarjeta/fondo, no la cantidad de links.
     const links = (bBlock.match(/<a\s/g) || []).length;
-    expect(links).toBeLessThanOrEqual(2);
+    expect(links).toBeLessThanOrEqual(3);
+    expect(bBlock).toContain('linkedin.com/in/ignacio-ana');
     // D-18: cero imágenes / beacons de tracking en el membretado.
     expect(bBlock).not.toContain('<img');
   });

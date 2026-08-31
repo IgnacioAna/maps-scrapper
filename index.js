@@ -12622,7 +12622,8 @@ function _actEmailParagraphs(text) {
 // Así que: sin tarjeta, sin fondo, alineado a la izquierda (se lee personal → cae en
 // Principal), pero CON prolijidad de marca — buena tipografía/espaciado, un acento
 // bronce CORTO (44px, no una barra a lo ancho) y el wordmark Vincca en la firma, con
-// 2 links (vincca.co + WhatsApp; sin LinkedIn — varios links son señal de promoción).
+// 3 links (vincca.co + WhatsApp + LinkedIn — pedido del user; el riesgo de Promociones
+// lo dominaba la tarjeta, no un link de más).
 // Estilos inline (Gmail/Outlook descartan CSS externo); tipografías de marca primero,
 // caen a las del sistema. Cero imágenes, cero botones, cero beacons (D-18).
 function _brandedEmailHtml(bodyText) {
@@ -12646,6 +12647,8 @@ function _brandedEmailHtml(bodyText) {
       <a href="https://vincca.co" style="color:#5C574C; text-decoration:none;">vincca.co</a>
       &nbsp;·&nbsp;
       <a href="https://wa.me/5492213508505" style="color:#5C574C; text-decoration:none;">WhatsApp</a>
+      &nbsp;·&nbsp;
+      <a href="https://www.linkedin.com/in/ignacio-ana" style="color:#5C574C; text-decoration:none;">LinkedIn</a>
     </div>
   </div>
 </div>`;
