@@ -255,7 +255,7 @@ describe("D-07 — _closeCommitment", () => {
     expect(l.commitment).toEqual(snapshot);
   });
 
-  it("D-06 seguimiento: cerrar 'cumplido' un enviar_info de parte 'yo' deja esperar_respuesta a +48h exactas", () => {
+  it("D-06 seguimiento: cerrar 'cumplido' un enviar_info de parte 'yo' deja esperar_respuesta a +72h exactas", () => {
     const l = freshLead();
     V._setCommitment(l, { tipo: "enviar_info", parte: "yo" }, NOW_ISO);
     const closedIso = "2026-08-16T09:00:00.000Z";
@@ -264,7 +264,7 @@ describe("D-07 — _closeCommitment", () => {
     expect(l.nextAction.tipo).toBe("esperar_respuesta");
     expect(l.nextAction.origen).toBe("compromiso");
     const deltaMs = new Date(l.nextAction.dueAt).getTime() - new Date(closedIso).getTime();
-    expect(deltaMs).toBe(48 * 60 * 60 * 1000);
+    expect(deltaMs).toBe(72 * 60 * 60 * 1000);
     expect(l.nextAction.motivo).toContain("esperando respuesta");
   });
 

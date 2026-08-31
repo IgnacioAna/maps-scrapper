@@ -330,7 +330,7 @@ describe("Material por email (ACT-05/D-17/D-18)", () => {
     expect(body).toContain("_dispoAnnounce(leadId, { lead: d.lead, forceToast: true })");
   });
 
-  it("NO llama _pdRender( (mismo criterio que 32-03: el envío programa nextAction a +48h)", () => {
+  it("NO llama _pdRender( (mismo criterio que 32-03: el envío programa nextAction a +72h)", () => {
     const body = materialBody();
     expect(body).not.toContain("_pdRender(");
   });

@@ -12375,10 +12375,12 @@ const COMMITMENT_DEFAULT_CANAL = {
 // este valor.
 const COMMITMENT_SOCIO_DELTA_MS = 5 * 24 * 60 * 60 * 1000;
 
-// D-06, fila 1 ("mandar hoy, y seguimiento a +48h si no responde"): el
+// D-06, fila 1 ("mandar hoy, y seguimiento a +72h si no responde"): el
 // seguimiento post-envío. DERIVADA de NEXT_ACTION_TEMPLATES (única fuente)
 // — nunca escribir la duración a mano, misma regla que GATE_PLACEHOLDER_DELTA_MS.
-const COMMITMENT_ENVIAR_INFO_DELTA_MS = NEXT_ACTION_TEMPLATES.find((t) => t.key === '48hs').deltaMs;
+// 2026-08-31: subido de 48h a 72h (pedido del user — dar más aire antes del
+// seguimiento del material enviado). '72hs' ya existe en NEXT_ACTION_TEMPLATES.
+const COMMITMENT_ENVIAR_INFO_DELTA_MS = NEXT_ACTION_TEMPLATES.find((t) => t.key === '72hs').deltaMs;
 
 // Piso para que un compromiso de "mandar hoy" cargado a último momento del
 // día de negocio no nazca vencido (1 hora mínima desde que se carga).
@@ -12718,7 +12720,7 @@ function _actRegisterSendEvent(lead, spec, nowIso) {
   const motivo = canal === 'whatsapp' ? 'mandé info por WhatsApp' : 'mandé material por email';
   // Crear-y-cerrar en el mismo acto es lo que traduce D-04 ("abrí el chat
   // para mandar X", no "el mensaje fue entregado") al modelo de la Phase 31
-  // — _closeCommitment es el que programa solo el esperar_respuesta a +48h
+  // — _closeCommitment es el que programa solo el esperar_respuesta a +72h
   // (COMMITMENT_ENVIAR_INFO_DELTA_MS). Consecuencia asumida: como hay UN
   // compromiso por lead (D-01 de la Phase 31), esto REEMPLAZA un compromiso
   // pendiente previo — el envío es el hecho más nuevo.
@@ -13571,7 +13573,7 @@ function _buildPlaceholderICS({ uid, organizerEmail, organizerName, attendeeEmai
 // de calendario con .ics (send-placeholder) y el material sin adjunto
 // (send-material) — un solo call site de Resend en todo el archivo. El
 // adjunto es OPCIONAL: solo se arma cuando llega un icsContent no vacío.
-async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, icsContent, fromOverride }) {
+async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, textBody, icsContent, fromOverride }) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
   // 2026-07-06: este email lo recibe el PROSPECTO — sin nombre de empresa (pedido del user).
@@ -13582,6 +13584,15 @@ async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, icsCo
     subject,
     html: htmlBody,
   };
+  // MAIL-03: parte text/plain — un correo sin text/plain puntúa peor en filtros.
+  // Opcional: el hold de calendario (.ics) no la manda; el material del puente sí.
+  if (typeof textBody === 'string' && textBody) payload.text = textBody;
+  // Milestone v5.0 (revert a Resend): las respuestas del prospecto tienen que
+  // caer en la casilla de Workspace de vincca.co, no en el remitente que use
+  // Resend. REPLY_TO_EMAIL, si está seteada, fija el Reply-To. Se OMITE la clave
+  // cuando la env no está (Resend rechaza un reply_to vacío). Aplica a los dos
+  // call sites del helper (hold .ics y material) — para ambos es lo deseable.
+  if (process.env.REPLY_TO_EMAIL) payload.reply_to = process.env.REPLY_TO_EMAIL;
   if (typeof icsContent === 'string' && icsContent) {
     payload.attachments = [{
       filename: 'reunion-tentativa.ics',
@@ -13836,11 +13847,18 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
 
   let sent = false;
   if (cleanVia === 'resend') {
-    // Milestone v5.0 (MAIL-02): el correo AL PROSPECTO sale por Gmail Workspace,
-    // no por Resend. El nombre de vía 'resend' y el flag `resendUnavailable` se
-    // conservan a propósito — es el contrato que el frontend ya conoce (cae al
-    // mailto ante el 409); acá solo cambió el proveedor por dentro.
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    // Milestone v5.0 → REVERTIDO: Railway bloquea los puertos SMTP salientes
+    // (25/465/587) salvo en plan Pro, así que el envío por Gmail Workspace se
+    // colgaba en producción (nunca conectaba). El correo AL PROSPECTO vuelve a
+    // salir por Resend (HTTPS, no bloqueado). Gmail NO se borra: queda detrás de
+    // MAIL_TRANSPORT=gmail para correr local o el día que se pase a Railway Pro.
+    // El nombre de vía 'resend' y el flag `resendUnavailable` se conservan — es
+    // el contrato que el frontend ya conoce (cae al mailto ante el 409).
+    const transport = String(process.env.MAIL_TRANSPORT || 'resend').toLowerCase() === 'gmail' ? 'gmail' : 'resend';
+    const configured = transport === 'gmail'
+      ? !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
+      : !!process.env.RESEND_API_KEY;
+    if (!configured) {
       // Nada salió — cortar ACÁ, antes de registrar nada.
       return res.status(409).json({
         error: 'El envío por el sistema no está configurado. Podés abrirlo en tu cliente de mail.',
@@ -13853,14 +13871,20 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
     // (escapa + \n→<br>). Cero imágenes/beacons embebidos (D-18: no se mide si
     // el prospecto abrió el mail).
     const htmlBody = _brandedEmailHtml(cleanMessage);
-    const result = await _sendGmailEmail({
-      toEmail,
-      subject: cleanSubject,
-      htmlBody,
-      // MAIL-03: parte text/plain = el cuerpo crudo que tipeó el SDR, antes de
-      // pasar por _actEmailHtml. Un mail sin text/plain puntúa peor en filtros.
-      textBody: cleanMessage,
-    });
+    // MAIL-03: parte text/plain = el cuerpo crudo que tipeó el SDR, antes de
+    // pasar por _actEmailHtml. Un mail sin text/plain puntúa peor en filtros.
+    const result = transport === 'gmail'
+      ? await _sendGmailEmail({ toEmail, subject: cleanSubject, htmlBody, textBody: cleanMessage })
+      : await _sendPlaceholderEmail({
+          toEmail, toName,
+          subject: cleanSubject,
+          htmlBody,
+          textBody: cleanMessage,
+          // El From del correo al prospecto tiene que ser vincca.co (dominio
+          // verificado en Resend), no el default onboarding@resend.dev. Lo fija
+          // PLACEHOLDER_FROM_EMAIL en Railway.
+          fromOverride: process.env.PLACEHOLDER_FROM_EMAIL || undefined,
+        });
     if (!result.sent) {
       // Nada salió — cortar ACÁ, el registro no puede decir que sí.
       return res.status(502).json({ error: 'No se pudo enviar el mail.', detail: result.reason });

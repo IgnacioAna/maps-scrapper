@@ -168,14 +168,14 @@ describe('Registro (ACT-02 / D-04 / D-05)', () => {
     expect(c.closedAt).toBeTruthy();
   });
 
-  it('6. lead.nextAction = esperar_respuesta, origen compromiso, dueAt entre 47 y 49 horas en el futuro', () => {
+  it('6. lead.nextAction = esperar_respuesta, origen compromiso, dueAt entre 71 y 73 horas en el futuro', () => {
     const na = sendResp.body.nextAction;
     expect(na).toBeTruthy();
     expect(na.tipo).toBe('esperar_respuesta');
     expect(na.origen).toBe('compromiso');
     const h = hoursFromNow(na.dueAt);
-    expect(h).toBeGreaterThan(47);
-    expect(h).toBeLessThan(49);
+    expect(h).toBeGreaterThan(71);
+    expect(h).toBeLessThan(73);
   });
 
   it('7. lead.interactions termina con material_sent (canal/templateId/to) y SIN la clave setterId', () => {

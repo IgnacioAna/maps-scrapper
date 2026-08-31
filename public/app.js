@@ -9493,10 +9493,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         _sendingBtn.textContent = via === 'mailto' ? 'Abriendo…' : 'Mandando…';
         // Guardar los datos del puente en el lead (best-effort, no bloquea).
         _saveBridgeFields(leadId, email, gateEl.value.trim()).catch(() => {});
+        // via 'mailto': copiamos el cuerpo al portapapeles AHORA — dentro del
+        // gesto del click y antes de cualquier await — porque clipboard.writeText
+        // puede rechazar si se llama después de un await (deja de contar como
+        // gesto de usuario en varios browsers). El mailto se abre corto (solo
+        // destinatario + asunto) y el SDR pega el cuerpo con Ctrl+V.
+        let _mailtoCopied = false;
+        if (via === 'mailto') {
+          try { await navigator.clipboard.writeText(message); _mailtoCopied = true; } catch (_) { _mailtoCopied = false; }
+        }
+        // Timeout de 20s: sin esto, si el backend se cuelga (p. ej. SMTP saliente
+        // bloqueado), el fetch nunca resuelve y el botón queda en "Mandando…"
+        // para siempre. Con AbortController el fetch cae al catch a los 20s y el
+        // finally restaura el botón + cierra el modal.
+        const _ctrl = new AbortController();
+        const _to = setTimeout(() => _ctrl.abort(), 20000);
         try {
           const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/send-material'), {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ via, email, subject, message, templateId }),
+            signal: _ctrl.signal,
           });
           const d = await r.json().catch(() => ({}));
           if (r.status === 409 && d.resendUnavailable) {
@@ -9514,17 +9530,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.showToast?.(d.error || ('Error mandando material: HTTP ' + r.status), { type: 'error' });
             return;
           }
-          if (via === 'mailto' && d.mailtoUrl) {
-            const opened = window.open(d.mailtoUrl, '_blank', 'noopener');
-            if (!opened) {
-              window.showToast?.('El navegador bloqueó la pestaña — abrila a mano: ' + d.mailtoUrl, { type: 'warn', duration: 10000 });
+          if (via === 'mailto') {
+            if (_mailtoCopied) {
+              // Cuerpo ya en el portapapeles → mailto CORTO (solo to + asunto),
+              // que Chrome no bloquea. El SDR pega el texto con Ctrl+V.
+              const shortMailto = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(subject);
+              const opened = window.open(shortMailto, '_blank', 'noopener');
+              window.showToast?.('Se abrió tu cliente de mail. El texto del correo quedó COPIADO — pegalo en el cuerpo con Ctrl+V.', { type: 'success', duration: 9000 });
+              if (!opened) window.showToast?.('Si no se abrió el cliente de mail, abrilo a mano y pegá el texto (Ctrl+V).', { type: 'warn', duration: 9000 });
+            } else if (d.mailtoUrl) {
+              // No se pudo copiar al portapapeles → último recurso: mailto completo
+              // con el cuerpo. Chrome puede recortarlo si es largo, pero es mejor
+              // que dejar al SDR sin nada.
+              const opened = window.open(d.mailtoUrl, '_blank', 'noopener');
+              if (!opened) window.showToast?.('El navegador bloqueó la pestaña — abrila a mano: ' + d.mailtoUrl, { type: 'warn', duration: 10000 });
             }
           }
           if (d.lead) _leadStoreApply(leadId, d.lead);
           _dispoAnnounce(leadId, { lead: d.lead, forceToast: true });
         } catch (e) {
-          window.showToast?.('Error de red mandando material: ' + e.message, { type: 'error' });
+          if (e && e.name === 'AbortError') {
+            window.showToast?.('El envío tardó demasiado (más de 20s) y se canceló. Probá de nuevo, o usá "Abrir mi cliente de mail".', { type: 'error', duration: 9000 });
+          } else {
+            window.showToast?.('Error de red mandando material: ' + e.message, { type: 'error' });
+          }
         } finally {
+          clearTimeout(_to);
           resendBtn.disabled = false;
           mailtoBtn.disabled = false;
           _sendingBtn.textContent = _sendingLabel;

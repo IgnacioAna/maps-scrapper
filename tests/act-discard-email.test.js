@@ -300,7 +300,7 @@ describe('Material por email (ACT-05)', () => {
     expect(mailtoResp.body.mailtoUrl).toContain('body=');
   });
 
-  it('14. Tras ese envío: commitment enviar_info/email/cumplido, nextAction esperar_respuesta a 47-49hs', () => {
+  it('14. Tras ese envío: commitment enviar_info/email/cumplido, nextAction esperar_respuesta a 71-73hs', () => {
     const c = mailtoResp.body.lead.commitment;
     expect(c.tipo).toBe('enviar_info');
     expect(c.canal).toBe('email');
@@ -308,8 +308,8 @@ describe('Material por email (ACT-05)', () => {
     const na = mailtoResp.body.lead.nextAction;
     expect(na.tipo).toBe('esperar_respuesta');
     const h = hoursFromNow(na.dueAt);
-    expect(h).toBeGreaterThan(47);
-    expect(h).toBeLessThan(49);
+    expect(h).toBeGreaterThan(71);
+    expect(h).toBeLessThan(73);
   });
 
   it('15. La entry de interactions es material_sent con canal:email', () => {
@@ -358,19 +358,23 @@ describe('Material por email (ACT-05)', () => {
     expect(block.toLowerCase()).not.toContain('pixel');
   });
 
-  it('21. Milestone v5.0 (MAIL-02/03): send-material envía por Gmail (_sendGmailEmail) con parte text/plain, no por Resend', () => {
+  it('21. Milestone v5.0 REVERTIDO: send-material sale por Resend (_sendPlaceholderEmail) por default, con Gmail detrás de MAIL_TRANSPORT y parte text/plain', () => {
     const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
     const start = src.indexOf("app.post('/api/setters/leads/:id/send-material'");
     const end = src.indexOf('// ── Deduplicar leads de setters', start);
     const block = src.slice(start, end);
-    // La rama de envío conmutó a Gmail…
+    // Railway bloquea SMTP saliente → el canal por default volvió a Resend…
+    expect(block).toContain('_sendPlaceholderEmail(');
+    // …pero Gmail NO se borró: queda detrás del flag para local / Railway Pro.
+    expect(block).toContain('MAIL_TRANSPORT');
     expect(block).toContain('_sendGmailEmail(');
-    expect(block).not.toContain('_sendPlaceholderEmail(');
-    // …con parte text/plain (MAIL-03)…
+    // …con parte text/plain (MAIL-03) en las dos vías…
     expect(block).toContain('textBody:');
-    // …y el gate del 409 mira credenciales Gmail, no RESEND_API_KEY.
+    // …el From del prospecto se fija con PLACEHOLDER_FROM_EMAIL (vincca.co)…
+    expect(block).toContain('PLACEHOLDER_FROM_EMAIL');
+    // …y el gate del 409 sigue mirando credenciales de ambos transportes.
+    expect(block).toContain('RESEND_API_KEY');
     expect(block).toContain('GMAIL_USER');
-    expect(block).toContain('GMAIL_APP_PASSWORD');
   });
 
   it('22. El helper _sendGmailEmail existe, usa smtp.gmail.com con GMAIL_USER/GMAIL_APP_PASSWORD y barre puertos 465/587', () => {

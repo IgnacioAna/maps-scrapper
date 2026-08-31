@@ -240,7 +240,7 @@ describe('Camino B — PATCH .../commitment (crear/reemplazar y cerrar)', () => 
     expect(r.body.lead.callbackAt).toBe('');
   });
 
-  it('14. cerrar un enviar_info de parte "yo" con {estado:"cumplido"} → nextAction esperar_respuesta, origen compromiso, dueAt +48h (D-06 fila 1)', async () => {
+  it('14. cerrar un enviar_info de parte "yo" con {estado:"cumplido"} → nextAction esperar_respuesta, origen compromiso, dueAt +72h (D-06 fila 1)', async () => {
     const created = await patchCommitment('l_b_cerrar_enviar_info', { tipo: 'enviar_info', parte: 'yo' });
     expect(created.status).toBe(200);
     const r = await patchCommitment('l_b_cerrar_enviar_info', { estado: 'cumplido' });
@@ -250,8 +250,8 @@ describe('Camino B — PATCH .../commitment (crear/reemplazar y cerrar)', () => 
     expect(r.body.nextAction.tipo).toBe('esperar_respuesta');
     expect(r.body.nextAction.origen).toBe('compromiso');
     const hrs = hoursFromNow(r.body.nextAction.dueAt);
-    expect(hrs).toBeGreaterThan(48 - 5 / 60);
-    expect(hrs).toBeLessThan(48 + 5 / 60);
+    expect(hrs).toBeGreaterThan(72 - 5 / 60);
+    expect(hrs).toBeLessThan(72 + 5 / 60);
   });
 
   it('15. cerrar sin compromiso pendiente → 409', async () => {
