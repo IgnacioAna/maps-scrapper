@@ -8210,7 +8210,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${mapsUrl ? `<a href="${escHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Maps</a>` : ''}
         ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Sitio web</a>` : ''}
         ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
-        ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
+        ${validEmail ? `<a href="#" onclick="event.preventDefault(); window._actSendMaterial('${escHtml(lead.id)}'); return false;" class="pd-quick-link">Email</a>` : ''}
         ${_actButtonsHTML(lead.id, { variant: 'pd' })}
       </div>
 
