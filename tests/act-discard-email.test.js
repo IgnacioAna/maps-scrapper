@@ -91,6 +91,7 @@ fs.writeFileSync(settersFile, JSON.stringify({
     l_email_noemail: lead(15),
     l_email_emptymsg: lead(16, { email: 'doc16@example.test' }),
     l_email_brand: lead(17, { email: 'doc17@example.test' }),
+    l_email_long: lead(18, { email: 'doc18@example.test' }),
   },
   calendar: [], sessions: [],
 }, null, 2));
@@ -416,7 +417,7 @@ describe('Material por email (ACT-05)', () => {
     expect(r.status).toBe(200);
   });
 
-  it('26. MEMBRETADO LIVIANO (MAIL-08, 2026-08-31): send-material usa _brandedEmailHtml sin la tarjeta de marketing (para caer en Principal, no Promociones)', () => {
+  it('26. MEMBRETADO LIVIANO Y PROLIJO (MAIL-08, 2026-08-31): send-material usa _brandedEmailHtml sin la tarjeta de marketing (Principal, no Promociones) pero con marca', () => {
     const src = fs.readFileSync(new URL('../index.js', import.meta.url), 'utf8');
     const start = src.indexOf("app.post('/api/setters/leads/:id/send-material'");
     const end = src.indexOf('// ── Deduplicar leads de setters', start);
@@ -424,20 +425,33 @@ describe('Material por email (ACT-05)', () => {
     expect(block).toContain('_brandedEmailHtml(');
     const bStart = src.indexOf('function _brandedEmailHtml(');
     expect(bStart).toBeGreaterThan(-1);
-    const bBlock = src.slice(bStart, bStart + 2000);
-    // Liviano: SIN los disparadores del clasificador de Promociones de Gmail —
-    // sin fondo de tarjeta, sin wordmark, sin barra/filete bronce, sin tabla centrada.
+    const bBlock = src.slice(bStart, bStart + 2200);
+    // SIN los disparadores del clasificador de Promociones: sin tarjeta centrada
+    // con fondo/borde ni fondo de página detrás del mail.
     expect(bBlock).not.toContain('#FAF7F0');   // fondo de la tarjeta (ya no)
-    expect(bBlock).not.toContain('>V</span>'); // wordmark (ya no)
-    expect(bBlock).not.toContain('#A67C1B');   // barra bronce (ya no)
+    expect(bBlock).not.toContain('#F1EDE3');   // fondo de página detrás del mail (ya no)
     expect(bBlock).not.toMatch(/width="600"/); // tabla centrada (ya no)
-    // Conserva marca discreta: firma con el nombre + Vincca y a lo sumo 2 links.
+    // CON marca prolija: acento bronce corto + wordmark Vincca + firma.
+    expect(bBlock).toContain('#A67C1B');       // acento bronce (44px) + V del wordmark
+    expect(bBlock).toContain('>V</span>');     // wordmark Vincca
     expect(bBlock).toContain('Ignacio Ana');
-    expect(bBlock).toContain('Vincca');
+    // A lo sumo 2 links (varios links = señal de promoción).
     const links = (bBlock.match(/<a\s/g) || []).length;
     expect(links).toBeLessThanOrEqual(2);
     // D-18: cero imágenes / beacons de tracking en el membretado.
     expect(bBlock).not.toContain('<img');
+  });
+
+  it('26b. CAP EMAIL (2026-08-31): un cuerpo > 900 chars NO se trunca en el correo (el cap de 900 era para wa.me)', async () => {
+    // El template del puente ronda ~1250 chars; con el cap viejo de 900 el mail
+    // salía cortado a mitad de palabra, sin la pregunta de horarios ni el cierre.
+    const msg = 'Detalle del correo. ' + 'ancla '.repeat(180) + 'CIERRE-72H-FIN';
+    expect(msg.length).toBeGreaterThan(900);
+    const r = await sendMaterial('l_email_long', { via: 'mailto', message: msg }, setterACookie);
+    expect(r.status).toBe(200);
+    const decoded = decodeURIComponent((r.body.mailtoUrl.split('&body=')[1] || ''));
+    // El final del mensaje sobrevive → no se cortó a 900.
+    expect(decoded).toContain('CIERRE-72H-FIN');
   });
 
   it('27. Email templates: presentacion_puente aceptado por email; envio_info (WhatsApp) no cuenta como email', () => {

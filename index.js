@@ -12565,16 +12565,26 @@ const ACT_EMAIL_TEMPLATE_IDS = new Set(['presentacion_puente']);
 // están en NEXT_ACTION_CANALES, no hace falta sumar nada ahí.
 const ACT_SEND_CANALES = new Set(['whatsapp', 'email']);
 
-// Tope del cuerpo del mensaje antes de meterlo en la URL. wa.me acepta más,
-// pero un texto largo en un query param es un vector de abuso y el mensaje
-// real del SDR nunca pasa de un par de párrafos.
+// Tope del cuerpo del mensaje antes de meterlo en la URL de wa.me. wa.me acepta
+// más, pero un texto largo en un query param es un vector de abuso y el mensaje
+// de WhatsApp del SDR nunca pasa de un par de párrafos.
 const ACT_MESSAGE_MAX = 900;
+
+// 2026-08-31: el correo del puente (email) es más largo que un WhatsApp — el
+// template completo ronda los ~1250 chars (saludo + pitch + calculadora +
+// horarios + cierre). Con el cap de 900 el mail salía CORTADO a mitad de palabra
+// ("…una alterna"), sin la pregunta de horarios ni la despedida. El email NO va
+// a una URL de wa.me, así que tiene su propio cap holgado. Sigue siendo un bound
+// real (protege contra un cuerpo arbitrario gigante).
+const ACT_EMAIL_MESSAGE_MAX = 2500;
 
 // Nunca lanza, nunca null. D-08 / nota #119: el texto lo ve el PROSPECTO, así
 // que la marca nunca puede colarse aunque el cliente mande un cuerpo arbitrario.
-function _actSanitizeMessage(raw) {
+// maxLen: default 900 (WhatsApp); el email pasa ACT_EMAIL_MESSAGE_MAX.
+function _actSanitizeMessage(raw, maxLen = ACT_MESSAGE_MAX) {
   if (typeof raw !== 'string') return '';
-  return _stripBrandMentions(raw.trim().slice(0, ACT_MESSAGE_MAX)).trim();
+  const cap = Number.isFinite(maxLen) && maxLen > 0 ? maxLen : ACT_MESSAGE_MAX;
+  return _stripBrandMentions(raw.trim().slice(0, cap)).trim();
 }
 
 // Phase 32 (ACT-05): el texto de "mandar material por email" lo tipea el SDR
@@ -12604,26 +12614,39 @@ function _actEmailParagraphs(text) {
     .join('\n');
 }
 
-// Milestone v5.0 (MAIL-08) — MEMBRETADO LIVIANO (2026-08-31): la versión con
-// tarjeta centrada de 600px + fondo de color + barra bronce + wordmark hacía que
-// Gmail tirara el correo del puente a PROMOCIONES (verificado en vivo). Para un
-// follow-up 1-a-1 post-llamada eso mata la apertura. Se rebajó a un membretado
-// que se lee como un mail personal escrito en Gmail: alineado a la izquierda, SIN
-// tarjeta, SIN fondo, SIN wordmark, SIN barra de color. Marca discreta = firma con
-// el nombre en negrita + "Vincca" y un filete sutil, con solo 2 links (vincca.co +
-// WhatsApp; se sacó LinkedIn — varios links son señal de promoción). Estilos inline
-// (Gmail/Outlook descartan CSS externo); tipografías de marca primero, caen a las
-// del sistema. Cero imágenes, cero botones, cero beacons (D-18).
+// Milestone v5.0 (MAIL-08) — MEMBRETADO LIVIANO Y PROLIJO (2026-08-31): la versión
+// con tarjeta centrada de 600px + fondo de color + barra bronce a lo ancho hacía
+// que Gmail tirara el correo del puente a PROMOCIONES (verificado en vivo). Para un
+// follow-up 1-a-1 eso mata la apertura. Lo que dispara el clasificador es la TARJETA
+// (caja centrada con fondo/borde) + logo/imagen + muchos links — NO tener estilo.
+// Así que: sin tarjeta, sin fondo, alineado a la izquierda (se lee personal → cae en
+// Principal), pero CON prolijidad de marca — buena tipografía/espaciado, un acento
+// bronce CORTO (44px, no una barra a lo ancho) y el wordmark Vincca en la firma, con
+// 2 links (vincca.co + WhatsApp; sin LinkedIn — varios links son señal de promoción).
+// Estilos inline (Gmail/Outlook descartan CSS externo); tipografías de marca primero,
+// caen a las del sistema. Cero imágenes, cero botones, cero beacons (D-18).
 function _brandedEmailHtml(bodyText) {
   const cuerpo = _actEmailParagraphs(bodyText);
+  // El correo fluye alineado a la izquierda, como un mail personal — NADA de
+  // tarjeta centrada ni fondo de color (eso disparaba Promociones). La prolijidad
+  // viene de: buena tipografía/espaciado, un ACENTO bronce corto (44px, no una
+  // barra a lo ancho) y el wordmark Vincca en la firma. Marca presente, sin el
+  // envoltorio de plantilla de marketing.
   return `<div style="font-family:'Source Sans 3',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
-            font-size:16px; line-height:1.6; color:#1A1D24; max-width:600px;">
+            font-size:16px; line-height:1.65; color:#1A1D24; max-width:600px;">
   ${cuerpo}
-  <div style="margin-top:20px; padding-top:14px; border-top:1px solid #E3DFD4;
-              font-size:14px; line-height:1.55; color:#5C574C;">
-    <strong style="color:#1A1D24; font-weight:600;">Ignacio Ana</strong> · Vincca<br>
-    <a href="https://vincca.co" style="color:#5C574C; text-decoration:underline;">vincca.co</a> ·
-    <a href="https://wa.me/5492213508505" style="color:#5C574C; text-decoration:underline;">WhatsApp</a>
+  <div style="margin-top:28px;">
+    <div style="width:44px; height:3px; background:#A67C1B; margin-bottom:14px; font-size:0; line-height:0;">&nbsp;</div>
+    <div style="font-family:'Lexend',-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;
+                font-size:16px; font-weight:600; letter-spacing:-0.01em; color:#1A1D24;">
+      <span style="color:#A67C1B;">V</span>incca
+    </div>
+    <div style="font-size:14px; line-height:1.55; color:#5C574C; margin-top:3px;">
+      Ignacio Ana<br>
+      <a href="https://vincca.co" style="color:#5C574C; text-decoration:none;">vincca.co</a>
+      &nbsp;·&nbsp;
+      <a href="https://wa.me/5492213508505" style="color:#5C574C; text-decoration:none;">WhatsApp</a>
+    </div>
   </div>
 </div>`;
 }
@@ -13800,7 +13823,8 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
   const toName = lead.doctor && !String(lead.doctor).toUpperCase().includes('N/A') ? lead.doctor : (lead.name || toEmail);
 
   const cleanSubject = _stripBrandMentions(String(subject || '').trim()).slice(0, 140) || 'La información que te prometí';
-  const cleanMessage = _actSanitizeMessage(message);
+  // Cap del EMAIL (no wa.me) → el cuerpo completo del puente entra sin cortarse.
+  const cleanMessage = _actSanitizeMessage(message, ACT_EMAIL_MESSAGE_MAX);
   if (!cleanMessage) {
     return res.status(400).json({ error: 'El mensaje no puede estar vacío.' });
   }
