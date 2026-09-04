@@ -57,6 +57,20 @@ fs.writeFileSync(path.join(tmpData, 'setters.json'), JSON.stringify({
     l_override_terminal: lead(11),
     l_override_compromiso: lead(12),
     l_override_garbage: lead(13),
+    // Auditoría 2026-09-03 (DATA-03): uno por estado terminal × vía de
+    // escritura de nextAction, para el barrido parametrizado del final.
+    l_term_descartado_fu: { ...lead(14), estado: 'descartado' },
+    l_term_agendado_fu: { ...lead(15), estado: 'agendado' },
+    l_term_cerrado_fu: { ...lead(16), estado: 'cerrado' },
+    l_term_descartado_cm: { ...lead(17), estado: 'descartado' },
+    l_term_agendado_cm: { ...lead(18), estado: 'agendado' },
+    l_term_cerrado_cm: { ...lead(19), estado: 'cerrado' },
+    l_vivo_fu: lead(20),
+    // DATA-04: una venta cerrada con el callback vencido que quedó colgado
+    // (cerrar un lead no limpia callbackAt).
+    l_cerrado_callback: { ...lead(21), estado: 'cerrado', callbackAt: new Date(Date.now() - 30 * 60000).toISOString() },
+    l_descartado_callback: { ...lead(22), estado: 'descartado', callbackAt: new Date(Date.now() - 30 * 60000).toISOString() },
+    l_vivo_callback: { ...lead(23), callbackAt: new Date(Date.now() - 30 * 60000).toISOString() },
   },
   calendar: [], sessions: [],
 }, null, 2));
@@ -216,5 +230,74 @@ describe('GATE — send-placeholder (source-assertion)', () => {
     const block = src.slice(muIdx, nextRouteIdx);
     expect(block).toContain('esperar_respuesta');
     expect(block).toContain('_setNextAction(l');
+  });
+});
+
+// ── Auditoría 2026-09-03 (DATA-03 / DATA-04) ─────────────────────────────
+// T-30-02 parametrizado: un lead en estado terminal NO lleva próximo paso,
+// venga por donde venga. El barrido de arriba cubre las vías de
+// call-disposition (default D-02, tests 4 y 5; override, test 8); acá se
+// agregan las dos vías que escriben nextAction FUERA de una disposición.
+//
+// El agujero real que cierra: tildar un follow-up era la única de las siete
+// vías sin el gate, así que le devolvía nextAction + callbackAt a un lead ya
+// descartado, agendado o cerrado.
+const TERMINALES = ['descartado', 'agendado', 'cerrado'];
+const leerLead = (id) => JSON.parse(fs.readFileSync(path.join(tmpData, 'setters.json'), 'utf8')).leads[id];
+
+describe('GATE — T-30-02 en las vías que NO son call-disposition (DATA-03)', () => {
+  for (const estado of TERMINALES) {
+    it(`tildar un follow-up sobre un lead '${estado}' no le programa próximo paso`, async () => {
+      const id = `l_term_${estado}_fu`;
+      const r = await request(app).patch(`/api/setters/leads/${id}/followup`)
+        .set('Cookie', cookie).send({ step: '24hs', value: true });
+      expect(r.status).toBe(200);
+      // El checkbox se registra igual (D-04: es historia), pero sin reloj.
+      expect(r.body.followUps['24hs']).toBe(true);
+      const l = leerLead(id);
+      expect(l.estado).toBe(estado);
+      expect(l.nextAction == null).toBe(true);
+      expect(l.callbackAt || '').toBe('');
+    });
+
+    it(`cargar un compromiso sobre un lead '${estado}' sigue devolviendo 409`, async () => {
+      const id = `l_term_${estado}_cm`;
+      const r = await request(app).patch(`/api/setters/leads/${id}/commitment`)
+        .set('Cookie', cookie).send({
+          tipo: 'llamar_despues', parte: 'yo', canal: 'llamada', motivo: 'test',
+          dueAt: new Date(Date.now() + 24 * 3600000).toISOString(),
+        });
+      expect(r.status).toBe(409);
+      const l = leerLead(id);
+      expect(l.nextAction == null).toBe(true);
+    });
+  }
+
+  it('sobre un lead VIVO el follow-up sigue programando el próximo paso (el gate no rompió la función)', async () => {
+    const r = await request(app).patch('/api/setters/leads/l_vivo_fu/followup')
+      .set('Cookie', cookie).send({ step: '24hs', value: true });
+    expect(r.status).toBe(200);
+    const l = leerLead('l_vivo_fu');
+    expect(l.nextAction).toBeTruthy();
+    expect(l.nextAction.origen).toBe('manual');
+    expect(l.nextAction.motivo).toMatch(/^follow-up /);
+    // D-03: nextAction se espeja en callbackAt.
+    expect(l.callbackAt).toBe(l.nextAction.dueAt);
+    expect(hoursFromNow(l.nextAction.dueAt)).toBeGreaterThan(23);
+    expect(hoursFromNow(l.nextAction.dueAt)).toBeLessThan(25);
+  });
+});
+
+// DATA-04: el poll de callbacks vencidos excluía ['descartado','agendado']
+// literal, sin 'cerrado'. Como cerrar un lead no limpia callbackAt, el toast
+// "callback vencido" sonaba para una venta ya cerrada.
+describe('GATE — callbacks/due excluye TODO estado terminal (DATA-04)', () => {
+  it('un lead cerrado con callback vencido no aparece; uno vivo sí', async () => {
+    const r = await request(app).get('/api/setters/callbacks/due?window=1440').set('Cookie', cookie);
+    expect(r.status).toBe(200);
+    const ids = r.body.items.map((i) => i.id);
+    expect(ids).toContain('l_vivo_callback');
+    expect(ids).not.toContain('l_cerrado_callback');
+    expect(ids).not.toContain('l_descartado_callback');
   });
 });

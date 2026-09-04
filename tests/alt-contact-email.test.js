@@ -110,3 +110,83 @@ describe("alt-contact con gatekeeperName", () => {
     expect(typeof r.body.gatekeeperName).toBe("string");
   });
 });
+
+// Auditoría 2026-09-03 (DATA-01) — el hallazgo alto: `phone` y `label` se
+// reasignaban SIEMPRE, mientras email y gatekeeperName respetaban el merge.
+// Un body parcial (el que manda _saveBridgeFields al mandar el correo del
+// puente o al guardar un callback) borraba lead.altPhone en disco sin aviso.
+// Los tests de arriba hacen ese mismo PUT parcial y no miran altPhone: la
+// suite pasaba verde con el bug adentro. Estos cierran el hueco — todos
+// assertan contra el JSON en DISCO, que es donde se perdía el dato.
+describe("alt-contact: merge de phone (DATA-01)", () => {
+  const disco = () => JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8")).leads.l_mine;
+  const cargarTelefono = async () => {
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ phone: "+5491199998888", label: "Encargado", email: "doc@clinica.com", gatekeeperName: "Sandra" });
+    expect(r.status).toBe(200);
+    expect(r.body.altPhone).toBe("+5491199998888");
+  };
+
+  it("guardar SOLO el email no borra el altPhone (el caso del correo del puente)", async () => {
+    await cargarTelefono();
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ email: "nuevo@clinica.com" });
+    expect(r.status).toBe(200);
+    expect(r.body.email).toBe("nuevo@clinica.com");
+    expect(r.body.altPhone).toBe("+5491199998888");
+    expect(r.body.altPhoneLabel).toBe("Encargado");
+    expect(disco().altPhone).toBe("+5491199998888");
+    expect(disco().altPhoneLabel).toBe("Encargado");
+  });
+
+  it("guardar SOLO quién atendió no borra el altPhone (el caso del modal de callback)", async () => {
+    await cargarTelefono();
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ gatekeeperName: "Vanesa" });
+    expect(r.status).toBe(200);
+    expect(r.body.gatekeeperName).toBe("Vanesa");
+    expect(r.body.altPhone).toBe("+5491199998888");
+    expect(disco().altPhone).toBe("+5491199998888");
+  });
+
+  it("phone: '' explícito SÍ borra teléfono y label (botón \"Borrar\" del modal)", async () => {
+    await cargarTelefono();
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ phone: "", label: "", email: "doc@clinica.com", gatekeeperName: "Sandra" });
+    expect(r.status).toBe(200);
+    expect(r.body.altPhone).toBe("");
+    expect(r.body.altPhoneLabel).toBe("");
+    expect(disco().altPhone).toBe("");
+    // Borrar el teléfono no toca el email ni quién atendió.
+    expect(disco().email).toBe("doc@clinica.com");
+    expect(disco().gatekeeperName).toBe("Sandra");
+  });
+
+  it("phone nuevo pisa al viejo (reemplazo total desde el modal)", async () => {
+    await cargarTelefono();
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ phone: "+5491177776666", label: "Dra. Pérez", email: "doc@clinica.com", gatekeeperName: "Sandra" });
+    expect(r.status).toBe(200);
+    expect(r.body.altPhone).toBe("+5491177776666");
+    expect(r.body.altPhoneLabel).toBe("Dra. Pérez");
+    expect(disco().altPhone).toBe("+5491177776666");
+  });
+
+  it("un phone inválido sigue siendo 400 y no toca lo guardado", async () => {
+    await cargarTelefono();
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie)
+      .send({ phone: "123" });
+    expect(r.status).toBe(400);
+    expect(disco().altPhone).toBe("+5491199998888");
+  });
+
+  it("un body sin ninguno de los cuatro campos no borra nada", async () => {
+    await cargarTelefono();
+    const r = await request(app).put("/api/setters/leads/l_mine/alt-contact").set("Cookie", aCookie).send({});
+    expect(r.status).toBe(200);
+    expect(r.body.altPhone).toBe("+5491199998888");
+    expect(r.body.email).toBe("doc@clinica.com");
+    expect(r.body.gatekeeperName).toBe("Sandra");
+    expect(disco().altPhone).toBe("+5491199998888");
+  });
+});

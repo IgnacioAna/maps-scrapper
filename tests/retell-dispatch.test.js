@@ -554,3 +554,113 @@ describe("Sin leads elegibles", () => {
     expect(r.body.reason.length).toBeGreaterThan(0);
   });
 });
+
+// Auditoría 2026-09-03 (DATA-02) — el segundo hallazgo alto: el dispatch
+// persistía `cfg`, que viene de loadRetellConfig() con los secrets overlayeados
+// desde las env vars. Con RETELL_API_KEY seteada (el modo de producción que el
+// propio código asume: el PUT devuelve 409 diciendo "editá las env vars en
+// Railway"), cada dispatch real escribía la key en texto plano en
+// retell_config.json — el archivo del volumen — y de ahí se filtraba por
+// /api/admin/export-data, que lee el archivo crudo justamente para no exponerla.
+//
+// Por qué la suite no lo veía: el test del export (tests/retell-config.test.js)
+// nunca corre un dispatch antes de exportar, y este archivo fuerza
+// RETELL_API_KEY="" en el arranque, así que la rama del overlay no se ejercitaba
+// nunca. Estos tests setean las env en caliente (loadRetellConfig las lee en
+// cada llamada) y miran el archivo en DISCO.
+describe("secrets de env no llegan al disco (DATA-02)", () => {
+  const ENV_KEY = "sk-env-real-key-NO-DEBE-ESTAR-EN-DISCO";
+  const ENV_WEBHOOK = "whsec-env-NO-DEBE-ESTAR-EN-DISCO";
+  const ENV_TOOL = "tool-env-NO-DEBE-ESTAR-EN-DISCO";
+
+  it("un dispatch real con las tres env seteadas deja el JSON sin ningún secret", async () => {
+    // Estado de producción: el JSON no tiene secrets propios (el self-healing
+    // del PUT los limpia cuando la env manda) y la rotación arranca en 0.
+    patchRetellConfig({ apiKey: "", webhookSecret: "", toolSecret: "", rotationIdx: 0, dailyCap: 50 });
+    globalThis.__voiceAgent._voiceDispatchRollover();
+    globalThis.__voiceAgent._voiceDispatchedToday.count = 0;
+
+    process.env.RETELL_API_KEY = ENV_KEY;
+    process.env.RETELL_WEBHOOK_SECRET = ENV_WEBHOOK;
+    process.env.RETELL_TOOL_SECRET = ENV_TOOL;
+    try {
+      sentCalls.length = 0;
+      const r = await request(app).post(DISPATCH_URL).set("Cookie", adminCookie).send({ count: 2 });
+      expect(r.status).toBe(200);
+      // Dispatch REAL (no dry-run): si no salió ninguna llamada, el write que
+      // se está probando no llegó a ejecutarse y el test no probaría nada.
+      expect(r.body.dispatched.length).toBeGreaterThan(0);
+      expect(sentCalls.length).toBeGreaterThan(0);
+      // La llamada a Retell SÍ usa la key de env (por eso el overlay existe).
+      expect(sentCalls[0].payload).toBeTruthy();
+
+      const raw = fs.readFileSync(RETELL_CONFIG_PATH, "utf8");
+      expect(raw).not.toContain(ENV_KEY);
+      expect(raw).not.toContain(ENV_WEBHOOK);
+      expect(raw).not.toContain(ENV_TOOL);
+      const onDisk = JSON.parse(raw);
+      expect(onDisk.apiKey).toBe("");
+      expect(onDisk.webhookSecret).toBe("");
+      expect(onDisk.toolSecret).toBe("");
+    } finally {
+      process.env.RETELL_API_KEY = "";
+      process.env.RETELL_WEBHOOK_SECRET = "";
+      process.env.RETELL_TOOL_SECRET = "";
+    }
+  });
+
+  it("el dispatch sigue persistiendo rotationIdx (el write no perdió su propósito)", async () => {
+    patchRetellConfig({ apiKey: "", webhookSecret: "", toolSecret: "", rotationIdx: 0, dailyCap: 50 });
+    globalThis.__voiceAgent._voiceDispatchRollover();
+    globalThis.__voiceAgent._voiceDispatchedToday.count = 0;
+    // Un test de más arriba dejó countryRouting.MX fijo en num_a, y con
+    // routing explícito NO se rota (paso 2 de _retellPickNumberForDestination).
+    // Se limpia acá para ejercitar el round-robin, que es lo que se persiste.
+    const telnyxOrig = readJson(TELNYX_CONFIG_PATH);
+    patchTelnyxConfig({ countryRouting: { default: "" } });
+
+    process.env.RETELL_API_KEY = ENV_KEY;
+    try {
+      const r = await request(app).post(DISPATCH_URL).set("Cookie", adminCookie).send({ count: 2 });
+      expect(r.status).toBe(200);
+      expect(r.body.dispatched.length).toBeGreaterThan(0);
+      const onDisk = JSON.parse(fs.readFileSync(RETELL_CONFIG_PATH, "utf8"));
+      // Round-robin sobre los 3 números activos: avanzó tantas veces como
+      // llamadas salieron. Lo que importa es que NO quedó en 0.
+      expect(onDisk.rotationIdx).toBeGreaterThan(0);
+      expect(typeof onDisk.updatedAt).toBe("string");
+    } finally {
+      process.env.RETELL_API_KEY = "";
+      writeJson(TELNYX_CONFIG_PATH, telnyxOrig);
+    }
+  });
+
+  it("un PUT que entra mientras corre el lote no se revierte (el dispatch relee del disco)", async () => {
+    // Acá la key va en el JSON (no en env): el dispatch necesita una apiKey
+    // para no cortar con 503, y lo que se prueba es la relectura, no el overlay.
+    patchRetellConfig({ apiKey: "sk-retell-test-key-not-real", webhookSecret: "", toolSecret: "", rotationIdx: 0, dailyCap: 50, agentId: "agent_test_dispatch_123" });
+    globalThis.__voiceAgent._voiceDispatchRollover();
+    globalThis.__voiceAgent._voiceDispatchedToday.count = 0;
+
+    // Simula el PUT concurrente: el snapshot `cfg` del dispatch se toma antes
+    // del pool, así que persistirlo entero pisaba lo que el admin acababa de
+    // guardar. Se escribe a disco DURANTE el lote, desde el mock de fetch.
+    let yaEscribio = false;
+    const impl = globalThis.__voiceAgent._voiceDispatchFetch.impl;
+    globalThis.__voiceAgent._voiceDispatchFetch.impl = async (url, opts) => {
+      if (!yaEscribio) { yaEscribio = true; patchRetellConfig({ dailyCap: 7, whatsappReturn: "+5491100001111" }); }
+      return impl(url, opts);
+    };
+    try {
+      const r = await request(app).post(DISPATCH_URL).set("Cookie", adminCookie).send({ count: 2 });
+      expect(r.status).toBe(200);
+      expect(yaEscribio).toBe(true);
+      const onDisk = JSON.parse(fs.readFileSync(RETELL_CONFIG_PATH, "utf8"));
+      expect(onDisk.dailyCap).toBe(7);
+      expect(onDisk.whatsappReturn).toBe("+5491100001111");
+    } finally {
+      globalThis.__voiceAgent._voiceDispatchFetch.impl = impl;
+      patchRetellConfig({ dailyCap: 50 });
+    }
+  });
+});

@@ -9593,7 +9593,11 @@ app.get('/api/setters/callbacks/due', requireAuth, (req, res) => {
   for (const id in data.leads) {
     const l = data.leads[id];
     if (!l.callbackAt) continue;
-    if (['descartado','agendado'].includes(l.estado)) continue;
+    // Auditoría 2026-09-03 (DATA-04): usar GATE_TERMINAL_ESTADOS, no una lista
+    // literal. La de antes quedó vieja cuando se agregó 'cerrado' (una venta
+    // ya cerrada), y como cerrar un lead no limpia callbackAt, el toast
+    // "callback vencido" sonaba para un deal ganado.
+    if (GATE_TERMINAL_ESTADOS.has(l.estado)) continue;
     if (authSetterId && l.assignedTo !== authSetterId) continue;
     const ts = new Date(l.callbackAt).getTime();
     if (isNaN(ts)) continue;
@@ -11143,8 +11147,14 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
     // lead sale de la cola de Llamadas hasta esa fecha y aparece en
     // Hoy → Callbacks. Antes tildar el checkbox no movía nada y el lead se
     // perdía — es el punto de esta fase.
+    // Auditoría 2026-09-03 (DATA-03): un lead terminal (descartado/agendado/
+    // cerrado) NO lleva próximo paso — invariante T-30-02. Esta era la única de
+    // las siete vías que escriben nextAction sin el gate, así que tildar un
+    // follow-up sobre un lead ya cerrado le devolvía nextAction + callbackAt.
+    // Se saltea en silencio, igual que las vías de call-disposition; el
+    // checkbox se sigue registrando (es historia, D-04).
     const template = NEXT_ACTION_TEMPLATES.find((t) => t.key === step);
-    if (template) {
+    if (template && !GATE_TERMINAL_ESTADOS.has(lead.estado)) {
       _setNextAction(lead, {
         tipo: 'callback',
         dueAt: new Date(Date.parse(nowIso) + template.deltaMs).toISOString(),
@@ -11670,12 +11680,23 @@ app.put('/api/setters/leads/:id/alt-contact', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'No autorizado para este lead.' });
   }
   ensureLeadDefaults(lead);
-  const rawPhone = (typeof req.body.phone === 'string' ? req.body.phone : '').trim();
-  const phone = rawPhone.replace(/[^\d+]/g, ''); // dejar solo + y dígitos
-  if (rawPhone && !/^\+?\d{6,15}$/.test(phone)) return res.status(400).json({ error: 'Teléfono inválido. Formato E.164: +5491112345678' });
-  const label = (typeof req.body.label === 'string' ? req.body.label : '').trim().slice(0, 60);
-  lead.altPhone = phone ? (phone.startsWith('+') ? phone : '+' + phone) : '';
-  lead.altPhoneLabel = lead.altPhone ? label : '';
+  // Auditoría 2026-09-03 (DATA-01): el teléfono se toca SOLO si el body trae el
+  // campo — la misma semántica de merge que email y gatekeeperName acá abajo.
+  // Antes se reasignaba siempre, así que un body parcial —el que manda
+  // _saveBridgeFields (public/app.js) con {email} o {gatekeeperName} al mandar
+  // el correo del puente o al guardar un callback— borraba lead.altPhone en
+  // disco sin aviso: el número del encargado que la recepción le pasó al SDR.
+  // La pérdida era invisible hasta la próxima carga, porque el front solo
+  // aplica {email, gatekeeperName} al cache local.
+  // phone omitido = no modificar · phone: '' = borrar explícito (botón "Borrar").
+  if (typeof req.body.phone === 'string') {
+    const rawPhone = req.body.phone.trim();
+    const phone = rawPhone.replace(/[^\d+]/g, ''); // dejar solo + y dígitos
+    if (rawPhone && !/^\+?\d{6,15}$/.test(phone)) return res.status(400).json({ error: 'Teléfono inválido. Formato E.164: +5491112345678' });
+    const label = (typeof req.body.label === 'string' ? req.body.label : '').trim().slice(0, 60);
+    lead.altPhone = phone ? (phone.startsWith('+') ? phone : '+' + phone) : '';
+    lead.altPhoneLabel = lead.altPhone ? label : '';
+  }
   // 2026-07-23: el mismo modal permite cargar el email que le pasaron al SDR.
   // Solo se toca si el body trae el campo (string); omitido = no modificar.
   if (typeof req.body.email === 'string') {
@@ -17222,6 +17243,32 @@ function saveRetellConfig(cfg) {
   catch (e) { console.error("[retell] Error guardando config:", e.message); }
 }
 
+// Lee el JSON tal cual está en disco, SIN el overlay de env vars — el único
+// lector válido cuando lo que sigue es un saveRetellConfig(). loadRetellConfig
+// overlaya los secrets desde env, así que persistir su resultado los escribiría
+// en texto plano en el volumen, rompiendo la invariante de arriba y filtrándolos
+// por /api/admin/export-data. Lo usan el PUT de config y el dispatch (24-03).
+function _loadRetellConfigRaw() {
+  let cfg;
+  try {
+    if (fs.existsSync(RETELL_CONFIG_FILE)) {
+      cfg = JSON.parse(fs.readFileSync(RETELL_CONFIG_FILE, "utf8"));
+    }
+  } catch {}
+  if (!cfg) cfg = _defaultRetellConfig();
+  // Normalizar shapes
+  if (typeof cfg.apiKey !== "string") cfg.apiKey = "";
+  if (typeof cfg.webhookSecret !== "string") cfg.webhookSecret = "";
+  if (typeof cfg.toolSecret !== "string") cfg.toolSecret = "";
+  if (typeof cfg.agentId !== "string") cfg.agentId = "";
+  if (typeof cfg.fromNumberId !== "string") cfg.fromNumberId = "";
+  cfg.dailyCap = Number.isFinite(Number(cfg.dailyCap)) ? Number(cfg.dailyCap) : 50;
+  if (typeof cfg.enabled !== "boolean") cfg.enabled = false;
+  cfg.rotationIdx = Number.isFinite(Number(cfg.rotationIdx)) ? Number(cfg.rotationIdx) : 0;
+  if (typeof cfg.whatsappReturn !== "string") cfg.whatsappReturn = "";
+  return cfg;
+}
+
 // _retellWebhookSecret: corrección de research §2.1 sobre D-24-01 — Retell NO
 // tiene un signing secret separado del API key, firma el webhook con el
 // MISMO API key. Si `webhookSecret` está vacío, cae a `apiKey`; si tampoco
@@ -18297,23 +18344,7 @@ app.put("/api/retell/config", requireAuth, requireRole("admin"), (req, res) => {
 
   // Leer cfg SIN aplicar env overlay para que el save preserve solo lo del
   // JSON (loadRetellConfig haría overlay, ensuciando lo persistido).
-  let cfg;
-  try {
-    if (fs.existsSync(RETELL_CONFIG_FILE)) {
-      cfg = JSON.parse(fs.readFileSync(RETELL_CONFIG_FILE, "utf8"));
-    }
-  } catch {}
-  if (!cfg) cfg = _defaultRetellConfig();
-  // Normalizar shapes
-  if (typeof cfg.apiKey !== "string") cfg.apiKey = "";
-  if (typeof cfg.webhookSecret !== "string") cfg.webhookSecret = "";
-  if (typeof cfg.toolSecret !== "string") cfg.toolSecret = "";
-  if (typeof cfg.agentId !== "string") cfg.agentId = "";
-  if (typeof cfg.fromNumberId !== "string") cfg.fromNumberId = "";
-  cfg.dailyCap = Number.isFinite(Number(cfg.dailyCap)) ? Number(cfg.dailyCap) : 50;
-  if (typeof cfg.enabled !== "boolean") cfg.enabled = false;
-  cfg.rotationIdx = Number.isFinite(Number(cfg.rotationIdx)) ? Number(cfg.rotationIdx) : 0;
-  if (typeof cfg.whatsappReturn !== "string") cfg.whatsappReturn = "";
+  const cfg = _loadRetellConfigRaw();
 
   if (typeof apiKey === "string" && !envSourced.apiKey) cfg.apiKey = apiKey.trim().substring(0, 200);
   if (typeof webhookSecret === "string" && !envSourced.webhookSecret) cfg.webhookSecret = webhookSecret.trim().substring(0, 200);
@@ -18579,9 +18610,18 @@ app.post("/api/admin/voice-agent/dispatch", requireAuth, requireRole("admin"), a
 
     // Persistir rotationIdx final. NO se escribe nada en setters.json — la
     // única escritura de callLog por llamada la hace el webhook (D-24-05).
-    cfg.rotationIdx = rotationIdx;
-    cfg.updatedAt = new Date().toISOString();
-    saveRetellConfig(cfg);
+    // Auditoría 2026-09-03 (DATA-02): se relee del disco con el lector CRUDO y
+    // se escribe solo el campo propio. `cfg` viene de loadRetellConfig(), que
+    // overlaya apiKey/webhookSecret/toolSecret desde las env vars: persistirlo
+    // escribía los secrets en texto plano en retell_config.json (volumen de
+    // Railway) y los filtraba por /api/admin/export-data, que lee el archivo
+    // crudo justamente para no exponerlos. Releer también evita revertir en
+    // silencio un PUT de config que haya entrado mientras corría el lote:
+    // `cfg` es un snapshot tomado antes del pool.
+    const fresh = _loadRetellConfigRaw();
+    fresh.rotationIdx = rotationIdx;
+    fresh.updatedAt = new Date().toISOString();
+    saveRetellConfig(fresh);
 
     // Rollover de nuevo justo antes de sumar (comparación en un solo lugar,
     // por si el dispatch cruzó la medianoche de negocio mientras corría).
