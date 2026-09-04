@@ -1,10 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v4.0
-milestone_name: Seguimiento bajo control
+milestone: v5.0
+milestone_name: El correo que abre la puerta
 status: executing
-last_updated: "2026-08-23T18:48:00.000Z"
-last_activity: 2026-08-23
+last_updated: "2026-09-03T00:00:00.000Z"
+last_activity: 2026-09-03
+# v5.0 (Phases 39-41) se construyó y deployó FUERA del flujo GSD: no hay
+# carpeta en .planning/phases ni PLAN/SUMMARY. Los contadores de abajo son
+# los de v4.0 (Phases 28-34, lo último que GSD sí trackeó); v5.0 se cuenta
+# aparte en la sección "Milestone v5.0" del cuerpo. Ver la decisión de
+# 2026-09-03 ahí: NO se reconstruyen planes retroactivos.
 progress:
   total_phases: 11
   completed_phases: 11
@@ -15,7 +20,94 @@ progress:
 
 # SCM — STATE
 
-> Estado vivo del proyecto. Actualización: 2026-08-13.
+> Estado vivo del proyecto. Actualización: 2026-09-03.
+
+---
+
+## Milestone v5.0 — "El correo que abre la puerta" (Phases 39-41)
+
+**Registrado retroactivamente el 2026-09-03**, a raíz de la auditoría de
+solo lectura de ese día (`OneDrive/.../OUTPUTS/scm/2026-09-03-auditoria-total-dialer.md`,
+sección "Lo que la auditoría no pudo ver"): STATE.md decía `milestone: v4.0`
+y no conocía las fases del correo, así que **ningún hallazgo de auditoría se
+pudo cruzar contra el estado formal de las fases** — para el sistema de
+planificación, las fases donde salieron 5 de esos 30 hallazgos no habían
+ocurrido.
+
+**Decisión explícita (2026-09-03): se registra el HECHO, no se reconstruyen
+los planes.** No hay ni va a haber `.planning/phases/39-41/` con
+PLAN.md/SUMMARY.md: escribirlos hoy sería inventar artefactos de
+planificación después de que el código ya está en producción, que es
+exactamente lo que un plan GSD no es. La fuente de verdad de estas tres
+fases son `CLAUDE.md` (entradas #194-198) y los commits.
+
+| Fase | Qué entregó | Dónde está documentada |
+|---|---|---|
+| **39 · MAIL-SMTP** | Canal de salida del correo al prospecto. Se construyó sobre Gmail Workspace de vincca.co (`nodemailer`, `_sendGmailEmail`). **Revertido el 31/08 por `0f4d5ce`**: Railway bloquea los puertos SMTP fuera de Pro, así que el canal por default volvió a Resend y Gmail quedó detrás de `MAIL_TRANSPORT=gmail`. | `CLAUDE.md` #194, #197, #198 |
+| **40 · MAIL-DATO** | `lead.gatekeeperName` ("quién atendió"), poblado por el webhook del agente de voz, el modal de callback y el modal de contacto secundario. | `CLAUDE.md` #195 |
+| **41 · MAIL-COPY** | La plantilla `presentacion_puente`: armado por bloques condicionales (`_buildBridgeEmail`), membretado Vincca (`_brandedEmailHtml`), guarda de placeholders sin resolver y lint de copy de marca (`tests/bridge-email.test.js`). | `CLAUDE.md` #196 |
+
+**Deuda conocida de estas fases** (de la auditoría del 03/09, sin ejecutar
+salvo lo que diga la sección de abajo): el bloque de env de `CLAUDE.md`
+todavía documenta el flujo Gmail que el revert dejó inerte y no menciona
+`MAIL_TRANSPORT`, que es la que manda; `PLACEHOLDER_FROM_EMAIL` no está
+documentada en ningún lado y sin ella el correo al prospecto intenta salir
+desde el sandbox de Resend; la vía real de envío no se ejecuta en ningún
+test (los que hay son greps sobre el fuente). Todo eso es la **Fase B
+(CONF)** del plan de la auditoría.
+
+---
+
+## Auditoría 2026-09-03 — plan de 4 fases
+
+Informe completo:
+`OneDrive/Desktop/Proyectos/Segundo Cerebro/OUTPUTS/scm/2026-09-03-auditoria-total-dialer.md`
+(49 agentes, solo lectura, verificación adversarial; 30 hallazgos).
+
+| Fase | Qué cierra | Estado |
+|---|---|---|
+| **A · DATA** | Dejar de perder datos y secretos (DATA-01..05) | **HECHA 2026-09-03** — ver abajo |
+| **B · CONF** | Que la configuración diga la verdad (CONF-01..07) | Pendiente |
+| **C · OBS** | Errores visibles y transcripts cerrados (OBS-01..06) | Pendiente — depende de CONF-01/02 |
+| **D · LIMP** | Números coherentes y borrar lo muerto (LIMP-01..06) | Pendiente — LIMP-06 necesita una decisión del user |
+
+**Fase A (DATA) — ejecutada el 2026-09-03**, cada fix verificado por
+mutación (revertir → test exacto en rojo → restaurar):
+
+- **DATA-01** (alta): `PUT /api/setters/leads/:id/alt-contact` adopta la
+  semántica de merge que ya usaban `email` y `gatekeeperName` — `phone`
+  omitido = no modificar. Antes, mandar el correo del puente (body parcial
+  `{email}`) **borraba `lead.altPhone` en disco**, el número del encargado
+  que la recepción le pasó al SDR, y la pérdida era invisible hasta la
+  próxima carga.
+- **DATA-02** (alta): el dispatch del agente de voz relee la config con un
+  lector crudo nuevo (`_loadRetellConfigRaw`) y escribe solo
+  `rotationIdx` + `updatedAt`. Antes persistía el objeto entero de
+  `loadRetellConfig()`, que overlaya los secrets desde las env vars: cada
+  dispatch real escribía la API key de Retell en texto plano en
+  `retell_config.json` y de ahí se filtraba por `/api/admin/export-data`.
+  El mismo fix cierra el borde de un PUT concurrente revertido en silencio.
+- **DATA-03** (media): tildar un follow-up respeta `GATE_TERMINAL_ESTADOS`
+  — era la única de las siete vías que escriben `nextAction` sin el gate
+  (invariante T-30-02).
+- **DATA-04** (media): el poll de callbacks vencidos usa
+  `GATE_TERMINAL_ESTADOS` en vez de la lista literal
+  `['descartado','agendado']`, que quedó vieja al agregarse `'cerrado'`:
+  el toast de "callback vencido" sonaba para una venta ya cerrada.
+- **DATA-05**: tests de regresión en `tests/alt-contact-email.test.js`
+  (+6), `tests/retell-dispatch.test.js` (+3) y
+  `tests/gate-next-action.test.js` (+7). Suite completa **2374/2374**.
+
+**Dato de configuración comprobado el 2026-09-03 (CONF-02, adelantado):**
+`NODE_ENV=production` **SÍ está seteada en Railway** — los 7 guards
+prod-only están activos. El CLI de Railway no está instalado en esta
+máquina, así que se determinó por sonda de solo lectura sobre el CORS de
+Socket.IO (`src/wa/gateway.js:48-60`), cuyas tres ramas dan firmas de
+header distintas y verificadas localmente. Efecto lateral encontrado:
+`WA_CORS_ORIGINS` está seteada pero **no matchea el propio origen de la
+app** (`https://scm-setting.up.railway.app` no recibe
+`Access-Control-Allow-Origin`), contra lo que dice `CLAUDE.md` #43. Hoy es
+inofensivo — el módulo WA está parkeado — pero es drift real de config.
 
 ---
 

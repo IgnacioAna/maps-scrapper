@@ -676,6 +676,28 @@ Plans:
 | 38. EDGE — Bordes de interacción del dialer (post-auditoría) | 1/1 | Complete | 2026-08-23 |
 
 
+## Milestone v5.0 "El correo que abre la puerta" (Phases 39-41) — fuera del flujo GSD
+
+**Registrado retroactivamente el 2026-09-03.** Estas tres fases se
+construyeron y deployaron sin pasar por GSD: **no tienen carpeta en
+`.planning/phases/` ni PLAN/SUMMARY, y se decidió explícitamente no
+reconstruirlos** (escribir planes después de que el código está en
+producción sería inventar el artefacto, no planificar). La fuente de
+verdad son `CLAUDE.md` #194-198 y los commits.
+
+| # | Phase | Qué entregó | Estado |
+|---|-------|------|--------|
+| 39 | MAIL-SMTP | Canal de salida del correo al prospecto. Gmail Workspace vía `nodemailer` — **revertido el 31/08 (`0f4d5ce`)**: Railway bloquea SMTP fuera de Pro, así que el default volvió a Resend y Gmail quedó detrás de `MAIL_TRANSPORT=gmail` | En producción |
+| 40 | MAIL-DATO | `lead.gatekeeperName` ("quién atendió") por tres vías: webhook del agente de voz, modal de callback, modal de contacto secundario | En producción |
+| 41 | MAIL-COPY | Plantilla `presentacion_puente`: armado por bloques condicionales, membretado Vincca, guarda de placeholders sin resolver, lint de copy de marca | En producción |
+
+Deuda abierta de estas fases (auditoría del 2026-09-03, **Fase B / CONF**):
+el bloque de env de `CLAUDE.md` documenta el flujo Gmail que el revert dejó
+inerte y omite `MAIL_TRANSPORT`; `PLACEHOLDER_FROM_EMAIL` no está
+documentada y sin ella el correo intenta salir desde el sandbox de Resend;
+la vía real de envío no se ejecuta en ningún test. Ver `STATE.md`.
+
+
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)
 
 Roadmap completo archivado en
