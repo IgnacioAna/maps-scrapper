@@ -67,6 +67,30 @@ fs.writeFileSync(
         assignedTo: "setter_beto", estado: "sin_contactar",
         callLog: [{ ts: now, outcome: "callback_later", by: "user_beto", duration: 45, transcript }],
       },
+      // Auditoría 2026-09-03 (EXPORT-02): para probar ?raw=1 hace falta un
+      // transcript que CONTENGA los datos que la anonimización se come — con
+      // el `transcript` genérico de arriba, anonimizado y crudo salen iguales
+      // y el test no probaría nada.
+      lead_con_datos: {
+        id: "lead_con_datos", num: 3, name: "Sonrisa Perfecta", phone: "+5215599990000", country: "México",
+        doctor: "Dr. Rivas", gatekeeperName: "Sandra", city: "CDMX",
+        assignedTo: "setter_ana", estado: "sin_contactar",
+        callLog: [{
+          ts: now, outcome: "answered_interested", by: "user_ana", duration: 90,
+          trainingSummary: "Resumen viejo, generado del texto anonimizado.",
+          transcript: {
+            segments: [
+              { speaker: "setter", text: "Hablo con Sonrisa Perfecta? Mi telefono es +5215599990000", start: 0 },
+              // El dominio del email NO lleva el nombre de la clínica a propósito:
+              // el anonimizador reemplaza las palabras del nombre ANTES de correr
+              // el regex de email, así que "contacto@sonrisa.test" quedaría como
+              // "contacto@[nombre].test" y nunca llegaría a marcarse [email].
+              { speaker: "lead", text: "Si, escribime a contacto@correo.test", start: 3 },
+            ],
+            transcribedAt: now,
+          },
+        }],
+      },
     },
     variants: [], calendar: [], sessions: []
   }, null, 2)
@@ -97,14 +121,18 @@ describe("GET /api/training/calls — privacidad por setter", () => {
     const r = await request(app).get("/api/training/calls").set("Cookie", adminCookie);
     expect(r.status).toBe(200);
     const leadIds = r.body.calls.map((c) => c.leadId).sort();
-    expect(leadIds).toEqual(["lead_de_ana", "lead_de_beto"]);
+    // lead_con_datos se sumó al fixture en 2026-09-03 para EXPORT-02 y también
+    // es de Ana — por eso Ana ve dos y el admin tres.
+    expect(leadIds).toEqual(["lead_con_datos", "lead_de_ana", "lead_de_beto"]);
   });
 
   it("un setter ve SOLO sus llamadas", async () => {
     const r = await request(app).get("/api/training/calls").set("Cookie", anaCookie);
     expect(r.status).toBe(200);
-    expect(r.body.calls.length).toBe(1);
-    expect(r.body.calls[0].leadId).toBe("lead_de_ana");
+    const leadIds = r.body.calls.map((c) => c.leadId).sort();
+    expect(leadIds).toEqual(["lead_con_datos", "lead_de_ana"]);
+    // Lo que este test protege: NO ve la de Beto.
+    expect(leadIds).not.toContain("lead_de_beto");
   });
 
   it("el otro setter ve solo las suyas (no las de Ana)", async () => {
@@ -145,5 +173,100 @@ describe("anti-marca en outputs de IA (sanitizeMercuryStyle)", () => {
     const { sanitizeMercuryStyle } = globalThis.__mercury;
     const out = sanitizeMercuryStyle("Te paso la web: https://scm-dental.vercel.app/");
     expect(out.text).toContain("https://scm-dental.vercel.app/");
+  });
+});
+
+// ── Auditoría 2026-09-03 · Fase A-bis (EXPORT-02) ────────────────────────
+// El dueño necesita los nombres para cruzar una llamada con un prospecto (el
+// proyecto vincca-ventas analiza estas llamadas), y la anonimización se come
+// justo ese dato. ?raw=1 los devuelve, con tres candados: solo admin por rol
+// REAL, opt-in puro (sin el flag no cambia nada), y sin escribir al callLog.
+//
+// ⚠️ La capa anonimizada de la biblioteca NO se toca: existe para que los
+// vendedores nuevos no vean datos de clientes. Los tests de abajo verifican
+// que el default siga anonimizando para TODOS, admin incluido.
+describe("GET /api/training/calls/:leadId/:callIdx?raw=1 (EXPORT-02)", () => {
+  const leerCallLog = () => JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8")).leads.lead_con_datos.callLog[0];
+
+  it("sin el flag, el admin sigue viendo TODO anonimizado (la biblioteca no cambió)", async () => {
+    const r = await request(app).get("/api/training/calls/lead_con_datos/0").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    const texto = r.body.segments.map((s) => s.text).join(" ");
+    expect(texto).not.toContain("Sonrisa Perfecta");
+    expect(texto).not.toContain("+5215599990000");
+    expect(texto).not.toContain("contacto@correo.test");
+    expect(texto).toContain("[cliente]");
+    expect(texto).toContain("[teléfono]");
+    expect(texto).toContain("[email]");
+    expect(r.body.raw).toBeUndefined();
+  });
+
+  it("con ?raw=1 el admin recibe los nombres, el teléfono y el email reales", async () => {
+    const r = await request(app).get("/api/training/calls/lead_con_datos/0?raw=1").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    expect(r.body.raw).toBe(true);
+    const texto = r.body.segments.map((s) => s.text).join(" ");
+    expect(texto).toContain("Sonrisa Perfecta");
+    expect(texto).toContain("+5215599990000");
+    expect(texto).toContain("contacto@correo.test");
+    expect(texto).not.toContain("[cliente]");
+    expect(texto).not.toContain("[teléfono]");
+  });
+
+  it("con ?raw=1 vienen los datos del lead para cruzarlo con el prospecto", async () => {
+    const r = await request(app).get("/api/training/calls/lead_con_datos/0?raw=1").set("Cookie", adminCookie);
+    expect(r.body.lead).toMatchObject({
+      id: "lead_con_datos", name: "Sonrisa Perfecta", phone: "+5215599990000",
+      doctor: "Dr. Rivas", gatekeeperName: "Sandra",
+    });
+  });
+
+  it("un setter NO puede usar el flag ni sobre su propia llamada → 403", async () => {
+    // lead_con_datos es de Ana: sin el flag lo ve (test de arriba), con el flag no.
+    const sinFlag = await request(app).get("/api/training/calls/lead_con_datos/0").set("Cookie", anaCookie);
+    expect(sinFlag.status).toBe(200);
+    const conFlag = await request(app).get("/api/training/calls/lead_con_datos/0?raw=1").set("Cookie", anaCookie);
+    expect(conFlag.status).toBe(403);
+  });
+
+  it("los turnos crudos son los MISMOS que los anonimizados, solo que sin tapar (misma cantidad y hablantes)", async () => {
+    const anon = await request(app).get("/api/training/calls/lead_con_datos/0").set("Cookie", adminCookie);
+    const raw = await request(app).get("/api/training/calls/lead_con_datos/0?raw=1").set("Cookie", adminCookie);
+    expect(raw.body.segments.length).toBe(anon.body.segments.length);
+    expect(raw.body.segments.map((s) => s.speaker)).toEqual(anon.body.segments.map((s) => s.speaker));
+    expect(raw.body.outcome).toBe(anon.body.outcome);
+    expect(raw.body.duration).toBe(anon.body.duration);
+  });
+
+  it("?raw=1 NO escribe nada en el callLog — no puede contaminar la biblioteca con un resumen sin anonimizar", async () => {
+    // Se anclan al valor LITERAL del fixture, no a un before/after de esta
+    // misma llamada: los tests de arriba ya pegaron con raw=1, así que si la
+    // rama escribiera, "antes" ya vendría contaminado y un before/after daría
+    // igual. (Verificado: con la comparación relativa, la mutación que hace
+    // escribir a la rama raw pasaba el test sin despeinarse.)
+    const SEMILLA = "Resumen viejo, generado del texto anonimizado.";
+    const antes = leerCallLog();
+    expect(antes.trainingSummary).toBe(SEMILLA);
+
+    const r = await request(app).get("/api/training/calls/lead_con_datos/0?raw=1").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+
+    const despues = leerCallLog();
+    // El resumen cacheado se generó del texto ANONIMIZADO. Si esta rama lo
+    // regenerara desde el crudo, escribiría nombres de clientes en disco y
+    // todos los vendedores los verían en la biblioteca, para siempre.
+    expect(despues.trainingSummary).toBe(SEMILLA);
+    expect(r.body.summary).toBe(SEMILLA);
+    expect(despues.trainingSummary).not.toContain("Sonrisa Perfecta");
+    expect(JSON.stringify(despues)).toBe(JSON.stringify(antes));
+  });
+
+  it("un valor distinto de 1 en raw no activa nada (whitelist estricta)", async () => {
+    for (const v of ["0", "true", "si", ""]) {
+      const r = await request(app).get(`/api/training/calls/lead_con_datos/0?raw=${v}`).set("Cookie", adminCookie);
+      expect(r.status).toBe(200);
+      expect(r.body.raw).toBeUndefined();
+      expect(r.body.segments.map((s) => s.text).join(" ")).toContain("[cliente]");
+    }
   });
 });

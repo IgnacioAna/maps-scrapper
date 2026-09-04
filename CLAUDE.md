@@ -1310,3 +1310,78 @@ revertir el fix, confirmar que el test exacto se pone en rojo, restaurar.
     - **Lección de método, la tercera de esta auditoría**: los hallazgos de severidad baja no pasaron por refutador y este llegaba con la evidencia invertida. Verificar id por id antes de borrar; "no existe en el HTML" y "está parkeado" se parecen mucho en un grep y son opuestos.
 
 203. **Cache-buster actual: `app.js v=20260903b`** (reemplaza #123/#133/#158). `style.css` en `v=20260822a` (no se tocó), `wa.js` en `v=20260815c`. **Suite completa 2393/2393 (127 archivos).**
+
+## Sesión 2026-09-04 — Fase A-bis (EXPORT): abrir las llamadas al proyecto de ventas
+
+Pedido: `C:\Proyectos\vincca-ventas` analiza las llamadas de este sistema y hoy
+las lee de `data/setters.json` **del disco**, por eso trabaja siempre con datos
+congelados al último `pre-deploy` (lo dice su propio informe de las 199
+llamadas: *"el archivo local está congelado al 17/08 16:34"*). Se le abren dos
+puertas por API. Las fases A, B, C y D de la auditoría ya estaban hechas
+(#199-204); esto es agregado.
+
+205. **EXPORT-01 — paginación de `GET /api/telnyx/calls/recent`**. El endpoint
+     devolvía `calls.slice(0, limit)` con el limit capado en 500 y `total`
+     completo: el cliente podía **detectar** que había más (`total >
+     calls.length`) pero no **llegar** a ellas. Ahora acepta `offset` y devuelve
+     `{offset, limit, hasMore, nextOffset}` — `nextOffset` es null cuando se
+     acabó, así el cliente hace `while (nextOffset !== null)` sin calcular nada.
+     - **El tope de 500 por página SE QUEDA**, a propósito y contra la opción
+       `all=1` que ofrecía el informe: devolver la base entera en un solo JSON es
+       cómo se tumba el container cuando el callLog crezca. La paginación está
+       acotada por construcción; `all=1` no.
+     - `total` sigue siendo el total FILTRADO (no el de la página) — es el
+       contrato que ya existía y no se tocó.
+     - **Medido en el preview con datos de producción: `total` 1005, el código
+       viejo alcanzaba 500 → 505 llamadas eran inalcanzables.** Con offset se
+       recorren las 1005 en 3 páginas, sin repetidas.
+     - `tests/calls-export.test.js` (10) — el endpoint **no tenía ningún test**.
+
+206. **EXPORT-02 — `?raw=1` en el detalle de la biblioteca**. ⚠️ **La premisa del
+     informe estaba invertida y hay que saberlo antes de tocar esto**: decía que
+     `GET /api/telnyx/calls/:leadId/:callIdx/transcript` anonimiza siempre
+     (citando `index.js:21167`). **No anonimiza** — devuelve `call.transcript`
+     crudo, y siempre lo hizo. La línea 21167 pertenece a OTRO endpoint,
+     `GET /api/training/calls/:leadId/:callIdx`, que es el de la biblioteca de
+     Entrenamiento IA y sí llama a `_anonymizeForTraining`.
+     - Por eso el flag se agregó **donde vive la anonimización** (el de
+       training), que además es el único que devuelve los turnos fusionados
+       (`_mergeTranscriptTurns`) y el resumen IA — la forma útil para analizar.
+       El de Telnyx ya daba nombres: no necesitaba flag.
+     - Tres candados: **(1)** solo admin y por el rol **REAL**
+       (`req.auth.user.role`), no el efectivo — con "Ver como SDR" el rol
+       efectivo es `setter` y el dueño perdería su propio export; **(2)** opt-in
+       puro, sin el flag no cambia NADA (la biblioteca sigue anonimizada para
+       todos, admin incluido — esa capa existe para que los vendedores nuevos no
+       vean datos de clientes); **(3) NO ESCRIBE NADA**.
+     - **El candado (3) es el que importa y casi se me escapa**: el resumen
+       cacheado (`trainingSummary`) se generó del texto ANONIMIZADO. Si la rama
+       `raw` lo regenerara desde el crudo, escribiría nombres de clientes en el
+       `callLog` y **todos los vendedores los verían en la biblioteca, para
+       siempre**. Con `raw=1` se devuelve el resumen tal como está cacheado y se
+       sale antes del `mutateSettersData`.
+     - Devuelve además `lead {id, name, phone, doctor, gatekeeperName, city,
+       country}` para cruzar la llamada con el prospecto.
+     - Verificado con datos reales en el preview: anonimizado *"si es con
+       [nombre]"* / crudo *"si es con jennifer"*, mismos 13 turnos, mismo
+       resumen. Setter real: 200 sin el flag, **403 con el flag**.
+     - 7 tests nuevos en `tests/training-privacy.test.js`.
+
+207. **Lección de método — un test que pasa no prueba nada hasta que lo rompés a
+     propósito.** El test de "raw=1 no escribe nada" comparaba el `trainingSummary`
+     **antes y después de su propia llamada**. Al simular la contaminación (que la
+     rama raw escriba), **el test pasó igual**: los tests de arriba del mismo
+     archivo ya habían pegado con `raw=1`, así que "antes" ya venía contaminado y
+     el before/after daba idéntico. Se reescribió anclando al **valor literal de
+     la semilla del fixture**, y ahí sí la mutación cae. Las otras tres mutaciones
+     (offset ignorado, chequeo de admin removido, raw anonimizando igual)
+     cayeron a la primera.
+     - ⚠️ Cuidado adicional para tests del anonimizador: reemplaza las palabras
+       del **nombre del lead ANTES** de correr el regex de email, así que
+       `contacto@sonrisa.test` en un lead llamado "Sonrisa Perfecta" queda
+       `contacto@[nombre].test` y **nunca llega a marcarse `[email]`**. El dato
+       igual queda tapado; pero un fixture que quiera ver `[email]` necesita un
+       dominio que no colisione con el nombre.
+
+208. **Suite completa 2410/2410 (128 archivos), `lint:env` verde.** Sin cambios
+     en `public/` → el cache-buster sigue en `app.js v=20260903b`.

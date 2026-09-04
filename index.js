@@ -20874,7 +20874,16 @@ app.get('/api/telnyx/calls/recent', requireAuth, (req, res) => {
   const eff = getEffectiveAuth(req);
   const role = eff.role;
   const authSetterId = role === 'setter' ? eff.setterId : '';
+  // Auditoría 2026-09-03 (EXPORT-01): el tope de 500 por página se queda —
+  // devolver la base entera en un JSON sin límite es la forma de tumbar el
+  // container cuando el callLog crezca. Lo que faltaba era poder PASAR de
+  // página: sin offset, todo lo que estuviera más allá de la llamada 500 era
+  // inalcanzable para un cliente externo (el proyecto vincca-ventas, que hoy
+  // lee data/setters.json del disco y por eso trabaja con datos congelados al
+  // último pre-deploy). `total` ya venía en la respuesta, así que el cliente
+  // podía DETECTAR el corte pero no cruzarlo.
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
+  const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
   const search = (req.query.search || '').toString().toLowerCase().trim();
   const outcomeFilter = (req.query.outcome || '').toString().trim();
   const visibleSet = _visibleSetterIds(req.auth.user); // Phase 18: supervisor scoped
@@ -20914,7 +20923,21 @@ app.get('/api/telnyx/calls/recent', requireAuth, (req, res) => {
     }
   }
   calls.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
-  res.json({ calls: calls.slice(0, limit), total: calls.length });
+  // El orden es estable (ts desc sobre el mismo snapshot), así que paginar con
+  // offset es seguro. `total` sigue siendo el total FILTRADO, no el de la
+  // página — es el contrato que ya existía y no se toca. `nextOffset` es null
+  // cuando no queda nada, así el cliente hace `while (nextOffset !== null)` sin
+  // calcular nada.
+  const page = calls.slice(offset, offset + limit);
+  const hasMore = offset + page.length < calls.length;
+  res.json({
+    calls: page,
+    total: calls.length,
+    offset,
+    limit,
+    hasMore,
+    nextOffset: hasMore ? offset + page.length : null,
+  });
 });
 
 // ── Entrenamiento IA: biblioteca de llamadas anonimizada + coach Q&A ──────────
@@ -21164,6 +21187,46 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
   if (!segs.length) return res.status(400).json({ error: 'Sin transcripción' });
   // Reagrupar en turnos ANTES de anonimizar → conversación legible (no frases sueltas).
   const turns = _mergeTranscriptTurns(segs);
+
+  // Auditoría 2026-09-03 (EXPORT-02): ?raw=1 devuelve los turnos SIN anonimizar.
+  // Para qué: el dueño necesita cruzar una llamada con un prospecto por nombre
+  // (el proyecto vincca-ventas analiza las llamadas), y la anonimización se come
+  // justo el dato que hace falta para eso.
+  //
+  // Tres candados, porque esto expone datos de clientes:
+  //  1. SOLO admin, y por el rol REAL (`req.auth.user.role`), no el efectivo:
+  //     con "Ver como SDR" el rol efectivo es 'setter' y el dueño perdería su
+  //     propio export; y al revés, ningún setter puede llegar acá simulando.
+  //  2. Es OPT-IN. Sin el flag no cambia absolutamente nada — la biblioteca de
+  //     Entrenamiento IA nunca lo manda, así que los vendedores siguen viendo
+  //     todo anonimizado. Esa capa existe a propósito y no se toca.
+  //  3. NO ESCRIBE NADA. El resumen cacheado (`trainingSummary`) se generó a
+  //     partir del texto ANONIMIZADO; si esta rama lo regenerara desde el texto
+  //     crudo, escribiría nombres de clientes en el callLog y contaminaría la
+  //     biblioteca para todos, de forma permanente. Con raw=1 se devuelve el
+  //     resumen tal como está cacheado (o vacío) y se sale antes del mutate.
+  if (String(req.query.raw || '') === '1') {
+    if (req.auth?.user?.role !== 'admin') {
+      return res.status(403).json({ error: 'El transcript sin anonimizar es solo para el admin.' });
+    }
+    const rawSegs = turns.map((s) => ({ speaker: s.speaker === 'setter' ? 'setter' : 'lead', text: s.text }));
+    return res.json({
+      outcome: c.outcome || '',
+      duration: c.duration || 0,
+      segments: rawSegs,
+      summary: c.trainingSummary || '',
+      aiSuggestedOutcome: c.aiSuggestedOutcome || '',
+      aiSuggestedReason: c.aiSuggestedReason || '',
+      raw: true,
+      lead: {
+        id: req.params.leadId,
+        name: lead.name || '', phone: lead.phone || '',
+        doctor: lead.doctor || '', gatekeeperName: lead.gatekeeperName || '',
+        city: lead.city || '', country: lead.country || '',
+      },
+    });
+  }
+
   const anonSegs = turns.map((s) => ({ speaker: s.speaker === 'setter' ? 'setter' : 'lead', text: _anonymizeForTraining(s.text, lead) }));
   let summary = c.trainingSummary || '';
   // Regenerar si está vacío o si quedó cacheado truncado (versiones viejas con

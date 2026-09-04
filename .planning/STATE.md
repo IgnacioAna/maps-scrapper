@@ -72,7 +72,27 @@ Informe completo:
 | **D · LIMP** | Números coherentes y borrar lo muerto (LIMP-01..06) | **HECHA 2026-09-03** |
 
 El detalle de cada fase, con el porqué de cada fix, está en `CLAUDE.md`
-entradas #199-204. Suite completa 2393/2393 (127 archivos).
+entradas #199-204.
+
+**Fase A-bis (EXPORT) — 2026-09-04, agregada al plan.** No estaba en el informe:
+salió de que `C:\Proyectos\vincca-ventas` analiza las llamadas de este sistema y
+las lee de `data/setters.json` del disco, o sea siempre congeladas al último
+`pre-deploy`. Dos puertas por API (`CLAUDE.md` #205-208):
+
+- **EXPORT-01**: `GET /api/telnyx/calls/recent` acepta `offset` y devuelve
+  `hasMore`/`nextOffset`. El tope de 500 por página se queda a propósito (una
+  respuesta sin límite tumba el container cuando el callLog crezca); lo que
+  faltaba era poder cruzar el corte. Medido en el preview con datos de
+  producción: de 1005 llamadas, **505 eran inalcanzables**.
+- **EXPORT-02**: `?raw=1` admin-only en el detalle de la biblioteca, para cruzar
+  una llamada con un prospecto por nombre. ⚠️ La premisa del informe estaba
+  invertida: el endpoint que citaba (`/api/telnyx/.../transcript`) **no**
+  anonimiza y nunca lo hizo; el que sí es `/api/training/calls/:leadId/:callIdx`.
+  El flag es opt-in puro y **no escribe nada** — regenerar el resumen desde el
+  texto crudo habría escrito nombres de clientes en el callLog y los verían
+  todos los vendedores, para siempre.
+
+Suite completa 2410/2410 (128 archivos).
 
 **LIMP-06 — resuelto el 2026-09-03 sin necesitar la decisión, porque la
 premisa del informe era falsa.** Decía "los 11 ids del módulo de variantes no
