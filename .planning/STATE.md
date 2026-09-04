@@ -66,10 +66,24 @@ Informe completo:
 
 | Fase | Qué cierra | Estado |
 |---|---|---|
-| **A · DATA** | Dejar de perder datos y secretos (DATA-01..05) | **HECHA 2026-09-03** — ver abajo |
-| **B · CONF** | Que la configuración diga la verdad (CONF-01..07) | Pendiente |
-| **C · OBS** | Errores visibles y transcripts cerrados (OBS-01..06) | Pendiente — depende de CONF-01/02 |
-| **D · LIMP** | Números coherentes y borrar lo muerto (LIMP-01..06) | Pendiente — LIMP-06 necesita una decisión del user |
+| **A · DATA** | Dejar de perder datos y secretos (DATA-01..05) | **HECHA 2026-09-03** |
+| **B · CONF** | Que la configuración diga la verdad (CONF-01..07) | **HECHA 2026-09-03** |
+| **C · OBS** | Errores visibles y transcripts cerrados (OBS-01..06) | **HECHA 2026-09-03** |
+| **D · LIMP** | Números coherentes y borrar lo muerto (LIMP-01..06) | **HECHA 2026-09-03 salvo LIMP-06** (ver abajo) |
+
+El detalle de cada fase, con el porqué de cada fix, está en `CLAUDE.md`
+entradas #199-203. Suite completa 2393/2393 (127 archivos).
+
+**Lo único que queda abierto de la auditoría — LIMP-06, necesita al user:**
+1. **¿El módulo de variantes/variables vuelve o se va?** `public/app.js` pide,
+   ordena y filtra `filteredVariants` para después tirar el HTML resultante:
+   los 11 ids que consulta no existen en `index.html`. No rompe nada (todo con
+   `?.`), pero son ~200 líneas que corren para nada. Es una decisión de
+   producto, no una limpieza.
+2. **¿Cuáles de los 8 endpoints admin sin caller en el frontend se usan a mano
+   por curl?** En un sistema de un operador, "sin caller en el frontend" no
+   prueba "sin uso" — este repo ya expone `/api/admin/errors/recent` sin UI.
+   Hay que preguntarlos uno por uno antes de borrar nada.
 
 **Fase A (DATA) — ejecutada el 2026-09-03**, cada fix verificado por
 mutación (revertir → test exacto en rojo → restaurar):

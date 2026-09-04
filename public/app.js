@@ -503,6 +503,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
+        // LIMP-05: cortar los polls ANTES de invalidar la sesión — si no,
+        // siguen disparando contra la API ya deslogueada hasta que termine la
+        // recarga, y sus catch se comen los 401 sin dejar rastro.
+        _stopBackgroundPolling();
         try {
           await fetch(apiUrl('/api/auth/logout'), { method: 'POST' });
         } finally {
@@ -669,6 +673,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!str) return '';
       return String(str).replace(/[&<>"']/g, c => _escMap[c]);
     };
+
+    // Auditoría 2026-09-03 (LIMP-03): clave YYYY-MM-DD del día LOCAL del
+    // navegador. `toISOString().slice(0,10)` NO sirve para esto: da el día UTC,
+    // que en Argentina (UTC-3) se adelanta a partir de las 21:00 — un callback
+    // de mañana quedaba etiquetado "Hoy". Es el mismo error que el backend ya
+    // había arreglado con BUSINESS_TZ (nota #113); acá la referencia correcta
+    // es la zona del navegador de quien mira, no la del server.
+    // Usar SIEMPRE este helper para comparar días; nunca toISOString().
+    const _localDayKey = (d) => {
+      const x = d instanceof Date ? d : new Date(d);
+      if (isNaN(x.getTime())) return '';
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    };
+    window._localDayKey = _localDayKey;
 
     // Sprint 19: Sanitizar a E.164 estricto (Telnyx-compatible).
     // Saca espacios, guiones, paréntesis. Garantiza que arranque con +.
@@ -962,6 +980,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     function _stopCallbackDuePolling() {
       if (_cbPollTimer) { clearInterval(_cbPollTimer); _cbPollTimer = null; }
+    }
+    // Auditoría 2026-09-03 (LIMP-05): _stopCallbackDuePolling existía y NADIE
+    // lo llamaba, y para el poll de speed-to-lead no había ni teardown. Al
+    // cerrar sesión los dos setInterval (90s y 15s) seguían pegándole a la API
+    // con la sesión muerta hasta que el navegador terminara de recargar, y sus
+    // catch se tragaban los 401 en silencio. Se cablean en el logout.
+    function _stopSpeedToLeadPolling() {
+      if (_speedPollTimer) { clearInterval(_speedPollTimer); _speedPollTimer = null; }
+    }
+    function _stopBackgroundPolling() {
+      try { _stopCallbackDuePolling(); } catch {}
+      try { _stopSpeedToLeadPolling(); } catch {}
     }
 
     // Poblar selector de países
@@ -6770,6 +6800,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         _callsRenderBulkBar();
         renderCallsList();
         renderCallsStats();
+        // LIMP-01: el dato canónico de HOY viene del servidor. Fire-and-forget:
+        // no bloquea el render (renderCallsStats muestra "…" hasta que llega) y
+        // al resolver se re-renderiza solo.
+        _fetchCallsTodayCanon();
         // Sprint 33: render barra de quota diaria si hay setter elegido
         _callsRenderQuota();
         // Contador "Hoy" del Power Dialer: refrescar con el callLog recién traído
@@ -6814,14 +6848,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Audit fix Sprint 29 (bug 2): null-safe — el span puede no existir
       if (countEl) countEl.textContent = `(${items.length} próximo${items.length === 1 ? '' : 's'})`;
 
-      // Agrupar por día (YYYY-MM-DD local)
-      const todayKey = new Date().toISOString().substring(0, 10);
-      const tomorrowKey = new Date(now + 86400000).toISOString().substring(0, 10);
+      // Agrupar por día (YYYY-MM-DD local).
+      // Auditoría 2026-09-03 (LIMP-03): estas dos claves se calculaban con
+      // toISOString(), que da el día UTC, y se comparaban contra la clave del
+      // grupo de más abajo, que sí usa las partes LOCALES de la fecha. En
+      // Argentina (UTC-3) las dos coinciden solo hasta las 21:00: después de esa
+      // hora un callback de mañana se etiquetaba "Hoy". El comentario decía
+      // "local" y el código hacía otra cosa.
+      const todayKey = _localDayKey(new Date());
+      const tomorrowKey = _localDayKey(new Date(now + 86400000));
       const groups = {};
       const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
       for (const it of items) {
         const d = new Date(it.ts);
-        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const key = _localDayKey(d);
         if (!groups[key]) {
           let label;
           if (key === todayKey) label = 'Hoy';
@@ -9386,7 +9426,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // recepción, antigüedad) llenan el asunto y el cuerpo, editables. Los dos
       // horarios los completa el operador (dependen de su agenda) y se inyectan
       // al mandar reemplazando los marcadores {{HORARIO_1}}/{{HORARIO_2}}.
-      const firmante = ((window.__CURRENT_USER__?.name || '').trim().split(/\s+/)[0]) || 'Ignacio';
+      // LIMP-02: el firmante es el del remitente real (From + membretado +
+      // links de la firma), no el del SDR logueado. Ver ACT_EMAIL_FIRMANTE.
+      const firmante = ACT_EMAIL_FIRMANTE;
       const built0 = _buildBridgeEmail(lead, { firmante });
       ov.innerHTML = `
         <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:520px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
@@ -10537,31 +10579,65 @@ document.addEventListener('DOMContentLoaded', async () => {
       return map[o] || o;
     }
 
+    // Auditoría 2026-09-03 (LIMP-01): "Llamadas hoy" y "% atendidas" se
+    // calculaban acá inline y divergían de todo el resto de la app en TRES
+    // cosas a la vez: (1) cortaban el día con la medianoche UTC del navegador
+    // en vez de la de negocio, así que de noche en AR contaban llamadas de
+    // ayer; (2) contaban sobre la población FILTRADA por país, mientras la
+    // barra de cuota diez líneas más abajo usa el callLog entero; (3) "atendida"
+    // eran 3 outcomes cuando el canon son 5 — hung_up y callback_later entran
+    // por decisión escrita (nota #157), y la propia app clasifica "Me cortó"
+    // fuera del grupo "No atendió" en el dropdown de disposición.
+    // Encima sumaba toda entrada del callLog sin mirar entry.by, así que un
+    // lead reasignado le arrastraba al nuevo dueño las llamadas del anterior.
+    // Ahora los dos números vienen del CALL METRICS CORE, igual que el Power
+    // Dialer y la vista Hoy. Los otros tres (agendados / por llamar / muertos)
+    // SÍ son del listado que se está mirando y siguen respetando el país.
+    let _callsTodayCanon = null;
+    async function _fetchCallsTodayCanon() {
+      try {
+        const u = currentUser;
+        // Reglas #135/#146: en modo "Ver como SDR" hay que mandar el setter
+        // explícito — el backend ve la cookie del admin y sin esto devolvería
+        // el agregado del equipo entero.
+        const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
+        const params = new URLSearchParams();
+        params.set('period', 'today');
+        if (isViewAsSetter) params.set('setter', u.setterId);
+        const r = await fetch(apiUrl(`/api/setters/cold-call-metrics?${params.toString()}`), { credentials: 'include' });
+        if (!r.ok) throw new Error('http ' + r.status);
+        const m = (await r.json()).metrics || {};
+        _callsTodayCanon = { dials: Number(m.dials) || 0, connects: Number(m.connects) || 0 };
+        renderCallsStats();
+      } catch (e) {
+        // Sin cambios: se conserva el último canon conocido (o se muestra "…"
+        // si todavía no hubo ninguno). Nunca se cae al cálculo local: era
+        // justamente el que daba otro número.
+      }
+    }
+
     function renderCallsStats() {
       const country = document.getElementById('calls-country-filter').value;
-      const today = new Date().toISOString().substring(0, 10);
       let pool = callsLeadsCache;
       if (country) pool = pool.filter(l => (l.country || '').trim() === country);
 
-      let callsToday = 0, answeredToday = 0;
       let scheduled = 0, dead = 0, pending = 0;
-
       pool.forEach(l => {
-        const log = Array.isArray(l.callLog) ? l.callLog : [];
-        log.forEach(entry => {
-          if ((entry.ts || '').substring(0, 10) === today) {
-            callsToday++;
-            if (['answered_interested','answered_not_interested','scheduled_with_admin'].includes(entry.outcome)) answeredToday++;
-          }
-        });
         if (l.estado === 'agendado') scheduled++;
         if (['wrong','invalid'].includes(l.phoneStatus)) dead++;
         if (!l.callAttempts && !['descartado','agendado'].includes(l.estado)) pending++;
       });
 
-      const pctAnswered = callsToday > 0 ? Math.round(answeredToday / callsToday * 100) + '%' : '—';
-      document.getElementById('calls-stat-today').textContent = callsToday;
-      document.getElementById('calls-stat-answered').textContent = pctAnswered;
+      const canon = _callsTodayCanon;
+      const elToday = document.getElementById('calls-stat-today');
+      const elAns = document.getElementById('calls-stat-answered');
+      elToday.textContent = canon ? canon.dials : '…';
+      elAns.textContent = canon && canon.dials > 0 ? Math.round(canon.connects / canon.dials * 100) + '%' : '—';
+      // El país filtra el listado, no tu día: dejarlo dicho para que nadie
+      // vuelva a "arreglar" el número haciéndolo seguir al filtro.
+      elToday.title = 'Tus llamadas de hoy (día de negocio, todas tus llamadas). No sigue al filtro de país.';
+      elAns.title = 'Atendidas / llamadas de hoy. "Atendida" es la definición canónica que usan Mi rendimiento, Equipo y Comando — incluye "Me cortó" y "Volver a llamar".';
+
       document.getElementById('calls-stat-scheduled').textContent = scheduled;
       document.getElementById('calls-stat-pending').textContent = pending;
       document.getElementById('calls-stat-dead').textContent = dead;
@@ -10830,6 +10906,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         if (document.querySelector('#view-hoy:not(.hidden)') && typeof _hoyRenderFromStore === 'function') _hoyRenderFromStore();
       } catch {}
+      // LIMP-01: refrescar el contador canónico de HOY. La llamada recién
+      // marcada suma un dial y puede sumar un connect; sin esto el número se
+      // quedaba viejo hasta la próxima carga de la vista. Va al FINAL a
+      // propósito: es fire-and-forget y no debe adelantarse a la limpieza de
+      // arriba (tests/call-stage-surfaces y script-attribution-core leen esta
+      // función como texto en una ventana acotada desde su apertura).
+      try { if (typeof _fetchCallsTodayCanon === 'function') _fetchCallsTodayCanon(); } catch {}
       _dispoAnnounce(leadId, opts);
     }
 
@@ -11732,11 +11815,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (p.timer) clearTimeout(p.timer);
       _pendingTranscribes = _pendingTranscribes.filter((x) => x !== p);
     }
-    // Vacía la cola entera.
-    function _discardPendingTranscription() {
-      _pendingTranscribes.forEach((p) => { if (p.timer) clearTimeout(p.timer); });
-      _pendingTranscribes = [];
-    }
+    // (Auditoría 2026-09-03 / LIMP-04: acá vivía _discardPendingTranscription,
+    // que vaciaba la cola entera. Quedó sin llamadores cuando el buffer pasó de
+    // UN slot a una cola FIFO — el bug de perder el audio de la primera llamada
+    // al re-discar antes de marcar. Los dos casos reales, consumir y vencer,
+    // los cubre _dropPendingTranscription de arriba.)
 
     async function _stopCallRecordingAndBuffer(leadId, callStartedAtIso) {
       // Detener recorders. Esperamos un poco para que el último chunk caiga.
@@ -14561,6 +14644,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // vincca.co sin utm_, "Vincca" nunca en el párrafo de antigüedad.
     const ACT_EMAIL_TEMPLATE_ID = 'presentacion_puente';
 
+    // Auditoría 2026-09-03 (LIMP-02): el cuerpo decía "Soy {nombre del SDR
+    // logueado}, de Vincca." mientras el membretado del backend
+    // (_brandedEmailHtml) firma "Ignacio Ana" sin condición — el mismo mail se
+    // contradecía entre el saludo y el pie. Y el pie no es lo único fijo: el
+    // From sale de PLACEHOLDER_FROM_EMAIL (ignacio@vincca.co, el dominio
+    // verificado en Resend) y los links de la firma son el WhatsApp y el
+    // LinkedIn de Ignacio. O sea, el correo YA es de Ignacio por los tres
+    // lados que el prospecto ve; el único que decía otra cosa era el saludo.
+    // Se unifica al remitente real en vez de personalizar: personalizarlo de
+    // verdad exigiría From, WhatsApp y LinkedIn por SDR, que es otra cosa.
+    // tests/bridge-email.test.js verifica que este nombre siga coincidiendo con
+    // la firma del membretado.
+    const ACT_EMAIL_FIRMANTE = 'Ignacio';
+
     // Año de "atiende desde". foundedYear explícito (4 dígitos) gana; si no, se
     // deriva de yearsActive (resta exacta, no es estimar ni redondear la
     // antigüedad, que ya viene dada). '' = no hay dato → el párrafo no existe.
@@ -14596,7 +14693,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const clinica = (typeof l.name === 'string' && l.name.trim()) ? l.name.trim() : 'la clínica';
       const ciudadTxt = (typeof l.city === 'string' && l.city.trim()) ? l.city.trim() : 'la zona';
       const recepcion = typeof l.gatekeeperName === 'string' ? l.gatekeeperName.trim() : '';
-      const firmante = (o.firmante && String(o.firmante).trim()) || 'Ignacio';
+      // El default tiene que ser el MISMO nombre que firma el membretado del
+      // backend (LIMP-02) — es lo que ve el prospecto en el pie del mail.
+      const firmante = (o.firmante && String(o.firmante).trim()) || ACT_EMAIL_FIRMANTE;
       const anio = _bridgeYear(l);
       const link = _bridgeCalcLink(l);
       const h1 = (o.horario1 || '').trim();

@@ -433,12 +433,13 @@
           <p style="color:var(--text-secondary); margin-bottom:1.5rem; line-height:1.5; font-size:14px;">Inyecta el poder de <strong style="color:white">Apify Actors</strong> para escrapear directorios cerrados y perfiles corporativos reales. Usando tu token configurado en .env.</p>
           
           <div class="filters-row" style="margin-bottom: 20px;">
-            <div class="ai-input-group select-pill" style="width: 100%; max-width: 300px;">
-              <select id="apify-actor-type">
-                <option value="ig">Instagram Profile Scraper</option>
-                <option value="hashtag">#️⃣ Instagram Hashtag Scraper</option>
-              </select>
-            </div>
+            <!-- Auditoría 2026-09-03 (LIMP-04): acá había un <select
+                 id="apify-actor-type"> (Profile / Hashtag) que NINGÚN js leía:
+                 el POST manda solo {query, maxItems} y el backend decide el
+                 modo por el prefijo del texto (# = hashtag, url = perfil).
+                 Elegir "Hashtag" y tipear un texto sin prefijo scrapeaba como
+                 perfil igual — un control que mentía. La regla ya está escrita
+                 en el placeholder del input de abajo. -->
             <div class="ai-input-group expanded">
               <input type="text" value="TOKEN: Configurado en .env" readonly style="background: rgba(255,255,255,0.05); color: var(--accent-hover);">
             </div>
@@ -3760,7 +3761,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260831a"></script>
+  <script type="module" src="/app.js?v=20260903a"></script>
   <script type="module" src="/wa.js?v=20260815c"></script>
 </body>
 </html>

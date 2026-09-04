@@ -6886,9 +6886,14 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
 // ── SCRAPE BATCHES: persistencia de cada scrape para no perder data ──
 // Cada batch guarda los results COMPLETOS (con phones/webs/etc.) para
 // que el admin pueda recuperarlos despues sin re-scrapear (no gastar
-// creditos SerpAPI). Persiste en data/scrape_batches.json. FIFO cap 50.
+// creditos SerpAPI). FIFO cap 50.
+//
+// El archivo vive en DATA_DIR/scrape_batches.json, o sea en el VOLUMEN de
+// Railway en producción — no en ./data del repo. Auditoría 2026-09-03
+// (LIMP-04): acá había una constante SCRAPE_BATCHES_FILE que apuntaba a
+// process.cwd()/data y que nadie usaba (load y save recalculan el path desde
+// DATA_DIR, abajo). Era peor que muerta: decía el path equivocado.
 // ══════════════════════════════════════════════════════════════
-const SCRAPE_BATCHES_FILE = path.join(process.cwd(), "data", "scrape_batches.json");
 
 function loadScrapeBatches() {
   // Path final lo computa lazy en runtime usando DATA_DIR cuando ya esta seteado.

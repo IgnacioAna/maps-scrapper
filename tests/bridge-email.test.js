@@ -20,7 +20,7 @@ beforeAll(() => {
   const e = appJs.indexOf(END);
   if (s === -1 || e === -1 || e < s) throw new Error("No se encontraron los marcadores BRIDGE-EMAIL-PURE");
   const block = appJs.slice(s, e);
-  const factory = new Function(block + "\nreturn { _buildBridgeEmail, _bridgeYear, _bridgeCalcLink, ACT_EMAIL_TEMPLATE_ID };");
+  const factory = new Function(block + "\nreturn { _buildBridgeEmail, _bridgeYear, _bridgeCalcLink, ACT_EMAIL_TEMPLATE_ID, ACT_EMAIL_FIRMANTE };");
   mod = factory();
 });
 
@@ -173,5 +173,36 @@ describe("BRIDGE-EMAIL: paridad template id frontend↔backend (MAIL-06)", () =>
     const block = indexJs.slice(start, start + 900);
     expect(block).toContain("ACT_EMAIL_TEMPLATE_IDS");
     expect(block).toMatch(/canal === 'email'/);
+  });
+});
+
+// Auditoría 2026-09-03 (LIMP-02): el cuerpo decía "Soy {SDR logueado}, de
+// Vincca." y el membretado del backend firma "Ignacio Ana" sin condición — el
+// mismo correo se contradecía entre el saludo y el pie. Además el From
+// (PLACEHOLDER_FROM_EMAIL) y los links de la firma son de Ignacio: el correo ya
+// era suyo por los tres lados que el prospecto ve. Esto verifica que el nombre
+// del saludo y el de la firma no se puedan volver a separar.
+describe("firmante coherente entre el cuerpo y el membretado (LIMP-02)", () => {
+  it("el saludo del cuerpo usa el mismo nombre que firma el membretado del backend", () => {
+    expect(mod.ACT_EMAIL_FIRMANTE).toBe("Ignacio");
+    const start = indexJs.indexOf("function _brandedEmailHtml(");
+    expect(start).toBeGreaterThan(-1);
+    const block = indexJs.slice(start, start + 2400);
+    // El membretado firma con nombre y apellido; el cuerpo, con el nombre.
+    expect(block).toContain("Ignacio Ana");
+    expect(block).toContain(mod.ACT_EMAIL_FIRMANTE);
+  });
+
+  it("el cuerpo generado dice 'Soy Ignacio' — no el nombre del SDR logueado", () => {
+    const { body } = mod._buildBridgeEmail(fullLead, {});
+    expect(body).toContain("Soy Ignacio, de Vincca.");
+  });
+
+  it("el overlay que arma el correo NO lee el nombre del usuario logueado", () => {
+    const start = appJs.indexOf("const built0 = _buildBridgeEmail(lead, { firmante })");
+    expect(start).toBeGreaterThan(-1);
+    const block = appJs.slice(Math.max(0, start - 700), start);
+    expect(block).not.toContain("__CURRENT_USER__");
+    expect(block).toContain("ACT_EMAIL_FIRMANTE");
   });
 });
