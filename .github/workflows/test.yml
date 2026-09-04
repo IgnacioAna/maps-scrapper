@@ -22,6 +22,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
+      # Auditoría 2026-09-03 (CONF-05): falla si el código lee una env var que
+      # no está declarada en .env.example. Corre ANTES de los tests: es un
+      # segundo y mata de raíz la clase entera de "algo no anda en producción
+      # y el motivo es una variable que nadie sabía que existía".
+      - run: npm run lint:env
       - run: npm test
         env:
           NODE_ENV: test

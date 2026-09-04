@@ -26,25 +26,40 @@ Si pusheas SOLO a master, Railway NO redeploya. Verificar siempre el branch
 correcto en Railway dashboard. Si en el futuro se cambia el branch que
 Railway escucha, actualizar este doc inmediatamente.
 
-### Variables de entorno necesarias en Railway:
-- `ADMIN_PASSWORD` - Contrasena del admin (NO "ADMIN_INITIAL_PASSWORD")
-- `ADMIN_EMAIL` - Email del admin (default `ignacioana91@gmail.com`)
-- `ADMIN_NAME` - Nombre del admin
-- `API_KEY` - SerpAPI key (Google Maps scraping)
-- `MERCURY_API_KEY` - Inception Labs (IA primaria)
-- `QWEN_API_KEY` - OpenRouter Qwen (IA fallback)
+### Variables de entorno
+
+> **La lista completa vive en [`.env.example`](.env.example)** — nombres y qué
+> hace cada una, sin valores. `npm run lint:env` (en el CI, antes de los tests)
+> **falla si el código lee una variable que no está declarada ahí**, así que esa
+> lista no se puede desactualizar en silencio. Lo de abajo es solo lo que hay
+> que saber de memoria.
+
+**Sin estas, producción está rota o insegura:**
+- `NODE_ENV=production` - **De ella cuelgan SIETE guards**: cookie `Secure`, webhooks de Telnyx y Retell fail-closed, el tool `/book`, el no-leak de `err.message`, el fail-fast de `JWT_SECRET` y el CORS de Socket.IO. `nixpacks.toml` NO la fuerza al arrancar a propósito (commit `756c548`). **Verificado el 2026-09-03: SÍ está seteada.** `/api/admin/health` reporta `prodGuardsActive` y el boot loguea una línea con el estado.
+- `JWT_SECRET` - mínimo 16 chars. En production, **si falta o es corta el server hace `exit(1)`** (nota #23). El fallback derivado de `ADMIN_PASSWORD` existe solo en dev/test.
+- `ADMIN_PASSWORD` - contraseña del admin (NO "ADMIN_INITIAL_PASSWORD")
+- `ADMIN_EMAIL` - email del admin. **El default del código es `ignacio.scmdental@gmail.com`** ([index.js:343](index.js:343)) — solo aplica al sembrar el admin en un volumen vacío; en Railway está seteada.
+- `ADMIN_NAME` - nombre del admin
+- `API_KEY` - SerpAPI (Google Maps scraping)
 - `APIFY_TOKEN` - Apify (Instagram Scraper)
-- `RESEND_API_KEY` - Resend (invitaciones del equipo + reporte semanal — NO el correo al prospecto)
-- `GMAIL_USER` - **Milestone v5.0**. Casilla del Google Workspace de vincca.co (`ignacio@vincca.co`). Sin ella + `GMAIL_APP_PASSWORD`, `send-material` cae al 409-mailto y el correo del puente NO sale por Gmail.
-- `GMAIL_APP_PASSWORD` - **Milestone v5.0**. Contraseña de aplicación de 16 chars (sin espacios) de esa casilla.
-- `GMAIL_FROM_NAME` - Opcional. Nombre visible del remitente (`Ignacio Ana`). Sin ella, el From sale como `ignacio@vincca.co` a secas.
-- `JWT_SECRET` - secret para JWT del módulo WA (si no está, deriva de ADMIN_PASSWORD)
-- `TELNYX_API_KEY` - **Recomendado**. Si está seteada, sobrescribe la del JSON y bloquea edición desde panel admin
-- `TELNYX_SIP_USERNAME` - **Recomendado**. Idem (env > JSON)
-- `TELNYX_SIP_PASSWORD` - **Recomendado**. Idem
-- `TELNYX_SIP_CONNECTION_ID` - **Recomendado**. Idem
-- `TELNYX_SIGNATURE_PUBLIC_KEY` - **Recomendado**. Idem (es pública pero por simetría operativa va con el grupo)
-- `OPENAI_API_KEY` - **Opcional**. Si está set, se habilita transcripción Whisper post-llamada (~$0.006/min). Sin esto, el endpoint `/api/telnyx/calls/:leadId/transcribe` devuelve 503.
+
+**Correo — leer esto antes de tocar nada del envío:**
+- `RESEND_API_KEY` - **el canal por default de TODO el correo, incluido el del prospecto**. También las invitaciones al equipo y el reporte semanal (esos van SIEMPRE por Resend).
+- `PLACEHOLDER_FROM_EMAIL` - **obligatoria**: el From de los correos al prospecto (hold de calendario y correo del puente). Tiene que ser del dominio verificado en Resend (`Ignacio Ana <ignacio@vincca.co>`). Sin ella no se intenta el envío y `send-material` cae al 409-mailto — Resend rechaza su dominio compartido (`onboarding@resend.dev`) para escribirle a un tercero. (Antes de la auditoría del 03/09 se intentaba igual y el SDR recibía un 502 sin motivo.)
+- `REPLY_TO_EMAIL` - casilla de Workspace donde caen las respuestas del prospecto. Si no está, la clave se **omite** del payload (Resend rechaza un `reply_to` vacío).
+- `MAIL_TRANSPORT` - `resend` (default) o `gmail`. **Es la que manda.**
+- `GMAIL_USER` / `GMAIL_APP_PASSWORD` / `GMAIL_FROM_NAME` - **solo se usan con `MAIL_TRANSPORT=gmail`**. El milestone v5.0 se construyó sobre Gmail Workspace y **se revirtió el 2026-08-31 (`0f4d5ce`): Railway bloquea los puertos SMTP (25/465/587) fuera del plan Pro**, así que el envío se colgaba sin conectar nunca. Gmail no se borró: queda detrás de la variable para correr local o el día que se pase a Pro.
+- `REPORT_EMAILS` - destinatarios del reporte semanal (CSV). Sin ella el reporte no tiene a quién ir.
+
+**IA — la cadena real (ojo con la factura):**
+- `OPENAI_API_KEY` - **PRIMARIA de toda la IA del sistema** desde 2026-06-26 ([index.js:36-45](index.js:36)), no "solo Whisper". Si la seteás para tener transcripción, **todo** (brief IA, autoTag, FAQs, asistente, coach) pasa a `gpt-4o-mini` y a su factura. Sin ella, `/api/telnyx/calls/:leadId/transcribe` devuelve 503.
+- `MERCURY_API_KEY` - Inception Labs. **Fallback legacy**, ya no es primaria (devolvía completions vacías en JSON estructurado y español).
+- `QWEN_API_KEY` - OpenRouter free. Último recurso.
+
+**Telefonía y agente de voz — env gana sobre el JSON:**
+- `TELNYX_API_KEY`, `TELNYX_SIP_USERNAME`, `TELNYX_SIP_PASSWORD`, `TELNYX_SIP_CONNECTION_ID`, `TELNYX_SIGNATURE_PUBLIC_KEY` - **Recomendadas**. Si están seteadas sobrescriben el JSON y el panel admin bloquea su edición (409). Así los secrets no tocan el volumen ni los backups.
+- `RETELL_API_KEY`, `RETELL_WEBHOOK_SECRET`, `RETELL_TOOL_SECRET` - mismo criterio.
+- `WA_CORS_ORIGINS` - orígenes del Socket.IO del módulo WA (CSV). Solo aplica con `NODE_ENV=production`; vacía = same-origin. **Al 2026-09-03 está seteada pero NO matchea el propio origen de la app** (`https://scm-setting.up.railway.app` no recibe `Access-Control-Allow-Origin`) — inofensivo hoy porque el módulo WA está parkeado, pero si se reactiva hay que arreglarla.
 
 ### Seguridad Telnyx: env vars > JSON
 
@@ -1231,7 +1246,7 @@ Plan completo en `.planning/phases/17-disposition-dnc-cadencias/PLAN.md`. Las 4 
 
 ## Sesión 2026-08-30 — Milestone v5.0 "El correo que abre la puerta" (Fases 39-41)
 
-194. **El correo al PROSPECTO sale por Gmail Workspace de vincca.co (SMTP), no por Resend** (Fase 39 / MAIL-SMTP, `index.js`). Se sumó `nodemailer` (primera librería de correo del proyecto; Resend seguía con `fetch` pelado). Helper nuevo `_sendGmailEmail({toEmail,subject,htmlBody,textBody})` al lado de `_sendPlaceholderEmail`, misma forma de retorno `{sent,reason}`: `smtp.gmail.com:465` TLS, `GMAIL_USER`/`GMAIL_APP_PASSWORD`, From = `GMAIL_FROM_NAME <GMAIL_USER>` (Google reescribe cualquier otro). Solo `send-material` (index.js ~13617) conmutó a Gmail; **Resend NO se tocó** — sigue en las invitaciones (index.js:1751), el reporte semanal (index.js:1977) y `send-placeholder`. El contrato del 409-con-`mailtoUrl` se preservó: si faltan las credenciales Gmail, mismo 409 con `resendUnavailable:true` que antes disparaba la falta de RESEND_API_KEY (el nombre de vía `'resend'` y el flag se conservan a propósito — es lo que el frontend ya conoce). MAIL-03: se manda text + html (parte text/plain = el cuerpo crudo antes de `_actEmailHtml`).
+194. ⚠️ **DESACTUALIZADA — revertida el 2026-08-31 por `0f4d5ce`. Leer la #199 antes que esta.** Describe el estado en que el correo al prospecto salía por Gmail; hoy sale por **Resend** y Gmail quedó detrás de `MAIL_TRANSPORT=gmail`. Se conserva porque el helper `_sendGmailEmail` sigue en el código y todo lo que dice de él es correcto. **El correo al PROSPECTO sale por Gmail Workspace de vincca.co (SMTP), no por Resend** (Fase 39 / MAIL-SMTP, `index.js`). Se sumó `nodemailer` (primera librería de correo del proyecto; Resend seguía con `fetch` pelado). Helper nuevo `_sendGmailEmail({toEmail,subject,htmlBody,textBody})` al lado de `_sendPlaceholderEmail`, misma forma de retorno `{sent,reason}`: `smtp.gmail.com:465` TLS, `GMAIL_USER`/`GMAIL_APP_PASSWORD`, From = `GMAIL_FROM_NAME <GMAIL_USER>` (Google reescribe cualquier otro). Solo `send-material` (index.js ~13617) conmutó a Gmail; **Resend NO se tocó** — sigue en las invitaciones (index.js:1751), el reporte semanal (index.js:1977) y `send-placeholder`. El contrato del 409-con-`mailtoUrl` se preservó: si faltan las credenciales Gmail, mismo 409 con `resendUnavailable:true` que antes disparaba la falta de RESEND_API_KEY (el nombre de vía `'resend'` y el flag se conservan a propósito — es lo que el frontend ya conoce). MAIL-03: se manda text + html (parte text/plain = el cuerpo crudo antes de `_actEmailHtml`).
 
 195. **Campo `lead.gatekeeperName` ("quién atendió")** (Fase 40 / MAIL-DATO). Default `''` en `ensureLeadDefaults` (al lado de `lead.doctor`). Poblado por tres vías: (a) webhook del agente de voz (index.js ~19910: además de la nota "Recepcionista: X", promueve a campo con política no-pisar); (b) modal de disposición "al colgar" → bloque puente en el modal de **callback** (index.html `#call-callback-modal` + `#call-cb-email`/`#call-cb-gatekeeper`, guardado best-effort vía `_saveBridgeFields` que pega a `alt-contact`, NO bloquea el callback); (c) edición a mano en el modal "Contacto secundario" (`_callsAltContact`) + `PUT /alt-contact` ahora acepta `gatekeeperName`. Se muestra en la ficha del lead ("Atendió: X"). NO se migran notas viejas (backfill no vale la pena). `alt-contact` es el único endpoint de persistencia — `call-disposition` NO se tocó (es compartido con el agente de voz).
 

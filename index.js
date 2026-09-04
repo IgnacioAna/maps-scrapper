@@ -12694,7 +12694,14 @@ function _actRegisterSendEvent(lead, spec, nowIso) {
   // MAIL-06: el Set válido depende del canal — email valida contra el suyo.
   const templateSet = canal === 'email' ? ACT_EMAIL_TEMPLATE_IDS : ACT_WA_TEMPLATE_IDS;
   const templateId = templateSet.has(s.templateId) ? s.templateId : '';
-  const to = String(s.to || '').slice(0, 40);
+  // Auditoría 2026-09-03 (OBS-06): el corte a 40 chars se pensó para un
+  // teléfono de WhatsApp y quedó aplicándose también al email, donde una
+  // dirección real de 46 chars se guardaba mutilada en el historial del lead
+  // — el registro decía "le mandé el material a <dirección cortada>", que no
+  // sirve para auditar nada. Se alinea al canal, igual que ya se hizo con
+  // templateSet y con ACT_EMAIL_MESSAGE_MAX. 254 = largo máximo de una
+  // dirección de correo (RFC 5321).
+  const to = String(s.to || '').slice(0, canal === 'email' ? 254 : 40);
 
   if (!Array.isArray(lead.interactions)) lead.interactions = [];
   // Entry de auditoría pensada para no distorsionar ninguna métrica: (1) a
@@ -13592,11 +13599,29 @@ function _buildPlaceholderICS({ uid, organizerEmail, organizerName, attendeeEmai
 // de calendario con .ics (send-placeholder) y el material sin adjunto
 // (send-material) — un solo call site de Resend en todo el archivo. El
 // adjunto es OPCIONAL: solo se arma cuando llega un icsContent no vacío.
+// Auditoría 2026-09-03 (CONF-03): el From de los correos AL PROSPECTO es
+// configuración obligatoria, igual que la API key. Resend restringe su dominio
+// compartido (onboarding@resend.dev) a la casilla dueña de la cuenta, así que
+// sin PLACEHOLDER_FROM_EMAIL el mail a un doctor NO sale — el proveedor lo
+// rechaza y el endpoint corta con 502. Falla ruidosamente, pero el motivo no
+// estaba escrito en ningún lado (la variable tenía 0 menciones en CLAUDE.md).
+// Ahora se trata como lo que es: si falta, no se intenta el envío y el llamador
+// cae a la salida manual que ya existe.
+function _prospectFromEmail() {
+  return String(process.env.PLACEHOLDER_FROM_EMAIL || '').trim();
+}
+
 async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, textBody, icsContent, fromOverride }) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
   // 2026-07-06: este email lo recibe el PROSPECTO — sin nombre de empresa (pedido del user).
-  const fromEmail = fromOverride || process.env.INVITE_FROM_EMAIL || 'Agenda <onboarding@resend.dev>';
+  // CONF-03: SIN fallback al sandbox de Resend. Los dos call sites de este helper
+  // (hold .ics y material del puente) escriben a un prospecto, y desde el dominio
+  // compartido ese envío es rechazado — mandarlo igual solo produce un 502 opaco.
+  const fromEmail = (fromOverride && String(fromOverride).trim()) || _prospectFromEmail();
+  if (!fromEmail) {
+    return { sent: false, reason: 'PLACEHOLDER_FROM_EMAIL no configurada (el From tiene que ser del dominio verificado en Resend, ej: Ignacio Ana <ignacio@vincca.co>)' };
+  }
   const payload = {
     from: fromEmail,
     to: [toEmail],
@@ -13875,9 +13900,14 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
     // El nombre de vía 'resend' y el flag `resendUnavailable` se conservan — es
     // el contrato que el frontend ya conoce (cae al mailto ante el 409).
     const transport = String(process.env.MAIL_TRANSPORT || 'resend').toLowerCase() === 'gmail' ? 'gmail' : 'resend';
+    // CONF-03: por Resend hacen falta DOS cosas, no una — la key y un From del
+    // dominio verificado. Con la key sola, el envío al prospecto se intentaba
+    // desde el sandbox (onboarding@resend.dev), Resend lo rechazaba y el SDR
+    // recibía un 502 sin saber por qué. Faltando cualquiera de las dos se cae
+    // al 409-mailto que el frontend ya sabe manejar.
     const configured = transport === 'gmail'
       ? !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD)
-      : !!process.env.RESEND_API_KEY;
+      : !!(process.env.RESEND_API_KEY && _prospectFromEmail());
     if (!configured) {
       // Nada salió — cortar ACÁ, antes de registrar nada.
       return res.status(409).json({
@@ -21213,6 +21243,14 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
   const lead = data.leads?.[leadId];
   if (!lead) return res.status(404).json({ error: 'Lead no encontrado' });
   if (authSetterId && lead.assignedTo !== authSetterId) return res.status(403).json({ error: 'No autorizado' });
+  // Auditoría 2026-09-03 (OBS-02): faltaba el scoping de supervisor que sus
+  // dos hermanos SÍ aplican (/api/training/calls/:leadId/:callIdx y el
+  // listado). Y esta es la única vía que devuelve el transcript SIN anonimizar.
+  // La vía real de acceso no era teórica: /api/telnyx/calls/recent scopea por
+  // atribución de la LLAMADA y este endpoint por lead.assignedTo, así que un
+  // lead reasignado a un setter fuera de la visibilidad del supervisor le
+  // seguía apareciendo en el Historial con su leadId a mano.
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
   if (!Array.isArray(lead.callLog) || !lead.callLog[callIdx]) return res.status(404).json({ error: 'Call log no encontrado' });
   const call = lead.callLog[callIdx];
   res.json({
@@ -22159,13 +22197,16 @@ app.delete('/api/training/:id', requireAuth, requireRole('admin'), (req, res) =>
   res.json({ ok: true });
 });
 
-// Global error handler — atrapa errores no capturados en rutas async
-app.use((err, _req, res, _next) => {
-  console.error("Error no capturado:", err);
-  if (!res.headersSent) {
-    res.status(500).json({ error: "Error interno del servidor." });
-  }
-});
+// Auditoría 2026-09-03 (OBS-01): acá había un SEGUNDO error handler que
+// respondía 500 y nunca llamaba next(err). Como Express recorre los handlers
+// en orden de registro, para las ~237 rutas montadas ANTES de esta línea este
+// ganaba siempre y el handler que SÍ loguea (el del final del archivo, con
+// logError) no corría nunca. Consecuencia: logError es el único que escribe
+// ERROR_LOG, así que /api/admin/errors/recent y el bloque checks.errors de
+// /api/admin/health no contaban un solo error de ruta — el panel de salud
+// decía "0 errores" por construcción, no por estar sano.
+// No alcanzaba con agregarle next(err): un handler que ya respondió deja
+// headersSent y el siguiente solo puede reenviar. Se borra entero.
 
 // ── Módulo WhatsApp Multi-Account ────────────────────────────────────────
 // Helpers que reusa el módulo WA (auth, datos)
@@ -22216,11 +22257,35 @@ async function markLeadContactedHelper({ leadId, accountId, fromPhone, toPhone, 
   });
 }
 
+// Auditoría 2026-09-03 (CONF-01): siete protecciones cuelgan de que
+// NODE_ENV valga exactamente 'production' — cookie Secure, webhook de Telnyx
+// y de Retell fail-closed, el tool /book, el no-leak de err.message, el
+// fail-fast de JWT_SECRET y el CORS de Socket.IO. `nixpacks.toml` NO la
+// fuerza al arrancar a propósito (commit 756c548): se setea como variable en
+// Railway. Antes el health reportaba `NODE_ENV || 'production'`, o sea decía
+// "production" justo cuando la variable estaba vacía y los guards NO estaban
+// puestos — el único punto de observabilidad mentía exactamente en el caso
+// que importaba. Ahora se reporta el valor crudo y un booleano derivado, y la
+// misma línea se loguea al arrancar para que el estado no dependa de que
+// alguien abra el panel.
+const PROD_GUARDS_ACTIVE = process.env.NODE_ENV === 'production';
+function _prodGuardsLine() {
+  return PROD_GUARDS_ACTIVE
+    ? '[boot] NODE_ENV=production — guards de producción ACTIVOS (cookie Secure, webhooks fail-closed, no-leak de errores, CORS whitelist).'
+    : `[boot] ⚠️  NODE_ENV=${process.env.NODE_ENV ? `'${process.env.NODE_ENV}'` : '(sin setear)'} — guards de producción INACTIVOS. En Railway esto NO debería pasar: setear NODE_ENV=production.`;
+}
+
 // Healthcheck: estado del sistema en tiempo real (admin only)
 const SERVER_BOOT_TS = Date.now();
 app.get('/api/admin/health', requireAuth, requireRole('admin'), (_req, res) => {
   const checks = {
-    server: { ok: true, uptimeSeconds: Math.round((Date.now() - SERVER_BOOT_TS) / 1000), nodeEnv: process.env.NODE_ENV || 'production' },
+    server: {
+      ok: true,
+      uptimeSeconds: Math.round((Date.now() - SERVER_BOOT_TS) / 1000),
+      // Valor CRUDO: '(sin setear)' es un estado real y distinto de 'production'.
+      nodeEnv: process.env.NODE_ENV || '(sin setear)',
+      prodGuardsActive: PROD_GUARDS_ACTIVE,
+    },
     data: { ok: true, dir: DATA_DIR, files: {} },
     counts: {},
     ai: { engine: openaiKey ? 'chatgpt' : (mercuryKey ? 'mercury' : (qwenKey ? 'qwen' : 'none')), model: AI_MODEL, chatgpt: !!process.env.OPENAI_API_KEY, mercury: !!process.env.MERCURY_API_KEY, qwen: !!process.env.QWEN_API_KEY },
@@ -22324,25 +22389,8 @@ app.get('/api/admin/errors/recent', requireAuth, requireRole('admin'), (_req, re
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Express error handler global (DEBE ir DESPUÉS de todas las rutas)
-app.use((err, req, res, next) => {
-  if (res.headersSent) return next(err);
-  logError(err, {
-    path: req.path,
-    method: req.method,
-    userId: req.auth?.user?.id,
-    role: req.auth?.user?.role
-  });
-  // 2026-05-23: en producción no leak err.message (puede contener paths,
-  // detalles internos, contenido de archivos). Sólo errores 4xx legítimos
-  // (validation) llegan acá con err.status, y suelen tener mensaje seguro.
-  const status = err.status || 500;
-  const isClientError = status >= 400 && status < 500;
-  const safeMessage = isClientError
-    ? (err.message || 'Error de validación')
-    : (process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : (err.message || 'Error interno'));
-  res.status(status).json({ error: safeMessage });
-});
+// El error handler global NO va acá: tiene que registrarse DESPUÉS de mountWa,
+// al final del archivo. Ver el comentario de `registerGlobalErrorHandler`.
 
 // En tests, NODE_ENV=test → no levantamos listener, sólo exportamos `app`.
 let server = null;
@@ -22350,6 +22398,9 @@ if (process.env.NODE_ENV !== "test") {
   server = app.listen(PORT, () => {
     console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
     console.log("👉 Abre ese enlace en tu navegador para usar el panel de extracción.");
+    // CONF-01: que el estado de los guards quede en los logs de cada deploy,
+    // sin depender de que alguien abra el panel de salud.
+    console.log(_prodGuardsLine());
   });
 }
 
@@ -22478,5 +22529,45 @@ mountWa(app, server, {
   aiClient: warmingAi,
   aiModel: WARMING_AI_MODEL,
 }).catch((err) => console.error("mountWa error:", err));
+
+// ── Error handler global — TIENE QUE SER LO ÚLTIMO ───────────────────────
+// Express recorre los handlers en orden de registro: un error handler solo
+// atrapa lo que tiran las rutas registradas ANTES que él. Auditoría
+// 2026-09-03 (OBS-01): estaba montado a ~120 líneas de acá, o sea antes del
+// mountWa de arriba, así que los ~56 endpoints de /api/wa/* no caían en
+// ninguno y respondían el HTML de finalhandler (13 de sus 18 rutas async no
+// tienen try/catch propio). Ahora va después.
+//
+// `mountWa` es async pero llama a `registerWaRoutes(app, deps)` de forma
+// SÍNCRONA, antes de su primer await: para cuando la expresión de arriba
+// devuelve la promesa, las rutas WA ya están registradas. Por eso alcanza con
+// ponerlo en la línea siguiente y no hace falta esperar la promesa.
+//
+// REGLA: si mañana se agrega otro `app.use` o `mountX(app)`, va ARRIBA de
+// este bloque. `tests/error-handler-order.test.js` lo verifica y rompe el CI
+// si alguien apendea una ruta al final del archivo.
+function registerGlobalErrorHandler() {
+  app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err);
+    logError(err, {
+      path: req.path,
+      method: req.method,
+      userId: req.auth?.user?.id,
+      role: req.auth?.user?.role
+    });
+    // 2026-05-23: en producción no leak err.message (puede contener paths,
+    // detalles internos, contenido de archivos). Sólo errores 4xx legítimos
+    // (validation) llegan acá con err.status, y suelen tener mensaje seguro.
+    // Este handler es ahora el único, y es el que filtra: por eso OBS-01 iba
+    // atado a confirmar NODE_ENV (verificado el 2026-09-03: es 'production').
+    const status = err.status || 500;
+    const isClientError = status >= 400 && status < 500;
+    const safeMessage = isClientError
+      ? (err.message || 'Error de validación')
+      : (process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : (err.message || 'Error interno'));
+    res.status(status).json({ error: safeMessage });
+  });
+}
+registerGlobalErrorHandler();
 
 export { app, buildWhatsAppUrl, digitsHaveKnownPrefix, sanitizeOpeningMessage, makeOpeningMessage };

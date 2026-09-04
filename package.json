@@ -15,7 +15,8 @@
     "cleanup:sessions": "node scripts/cleanup-stale-sessions.mjs",
     "dedupe:leads": "node scripts/dedupe-leads.mjs",
     "coverage:callstage": "node scripts/coverage-callstage.mjs",
-    "coverage:script": "node scripts/coverage-script.mjs"
+    "coverage:script": "node scripts/coverage-script.mjs",
+    "lint:env": "node scripts/lint-env.mjs"
   },
   "engines": {
     "node": ">=20.0.0"

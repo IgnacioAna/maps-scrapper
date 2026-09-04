@@ -92,6 +92,13 @@ fs.writeFileSync(settersFile, JSON.stringify({
     l_email_emptymsg: lead(16, { email: 'doc16@example.test' }),
     l_email_brand: lead(17, { email: 'doc17@example.test' }),
     l_email_long: lead(18, { email: 'doc18@example.test' }),
+    // Auditoría 2026-09-03 (OBS-03/OBS-06): la vía REAL de envío por Resend.
+    // El email de l_email_realsend tiene 47 chars a propósito — el registro lo
+    // truncaba a 40 y guardaba una dirección mutilada.
+    l_email_realsend: lead(19, { email: 'consultorio.odontologico.dra.perez@example.test' }),
+    l_email_realsend2: lead(20, { email: 'doc20@example.test' }),
+    l_email_nofrom: lead(21, { email: 'doc21@example.test' }),
+    l_email_502: lead(22, { email: 'doc22@example.test' }),
   },
   calendar: [], sessions: [],
 }, null, 2));
@@ -463,5 +470,144 @@ describe('Material por email (ACT-05)', () => {
     const block = src.slice(start, src.indexOf(');', start));
     expect(block).toContain("'presentacion_puente'");
     expect(block).not.toContain("'envio_info'");
+  });
+});
+
+// ── Auditoría 2026-09-03 (OBS-03) ────────────────────────────────────────
+// La vía REAL de envío no se ejecutaba en NINGÚN test: los fixtures apagan
+// RESEND_API_KEY/GMAIL_*, así que todo caía al 409 o al mailto, y la
+// "cobertura" del camino que salió eran los tests 20/21/22 de arriba, que son
+// greps de texto sobre index.js. Quedaban sin ejecutar: la selección de
+// transporte, _brandedEmailHtml, el textBody, el fromOverride,
+// _sendPlaceholderEmail entero y la rama 502. Es justo el camino que se
+// revirtió dos veces en cuatro días.
+//
+// Patrón copiado de tests/weekly-report.test.js: env real + stub de
+// globalThis.fetch + restore en finally.
+describe('ACT-05 · vía real de Resend ejecutada (OBS-03)', () => {
+  const FROM = 'Ignacio Ana <ignacio@vincca.co>';
+
+  // Corre `fn` con Resend "configurado" y el fetch stubeado. Devuelve los
+  // payloads que se le mandaron al proveedor.
+  async function withResend(fn, { ok = true, from = FROM, replyTo = '' } = {}) {
+    const realFetch = globalThis.fetch;
+    const prev = {
+      key: process.env.RESEND_API_KEY,
+      from: process.env.PLACEHOLDER_FROM_EMAIL,
+      reply: process.env.REPLY_TO_EMAIL,
+    };
+    const calls = [];
+    process.env.RESEND_API_KEY = 'test-key-obs03';
+    if (from) process.env.PLACEHOLDER_FROM_EMAIL = from;
+    else delete process.env.PLACEHOLDER_FROM_EMAIL;
+    if (replyTo) process.env.REPLY_TO_EMAIL = replyTo;
+    else process.env.REPLY_TO_EMAIL = '';
+    globalThis.fetch = async (url, opts) => {
+      calls.push({ url, headers: opts?.headers || {}, payload: JSON.parse(opts?.body || '{}') });
+      return ok
+        ? { ok: true, status: 200, json: async () => ({ id: 'email_fake_obs03' }), text: async () => '{"id":"email_fake_obs03"}' }
+        : { ok: false, status: 422, json: async () => ({ message: 'domain not verified' }), text: async () => '{"message":"domain not verified"}' };
+    };
+    try { await fn(calls); } finally {
+      globalThis.fetch = realFetch;
+      process.env.RESEND_API_KEY = prev.key ?? '';
+      if (prev.from === undefined) delete process.env.PLACEHOLDER_FROM_EMAIL;
+      else process.env.PLACEHOLDER_FROM_EMAIL = prev.from;
+      process.env.REPLY_TO_EMAIL = prev.reply ?? '';
+    }
+  }
+
+  it('23. el mail SALE: un solo POST a Resend, con el From del dominio verificado y el destinatario del lead', async () => {
+    await withResend(async (calls) => {
+      const r = await sendMaterial('l_email_realsend', {
+        via: 'resend', subject: 'Los pacientes que no volvieron', message: 'Doctor, buenos dias.\n\nSegundo parrafo.',
+      }, setterACookie);
+      expect(r.status).toBe(200);
+      expect(calls.length).toBe(1);
+      expect(calls[0].url).toContain('resend.com');
+      expect(calls[0].payload.from).toBe(FROM);
+      expect(calls[0].payload.to).toEqual(['consultorio.odontologico.dra.perez@example.test']);
+      expect(calls[0].payload.subject).toBe('Los pacientes que no volvieron');
+    });
+  });
+
+  it('24. el html pasó por el membretado Vincca y va la parte text/plain con el cuerpo crudo (MAIL-03)', async () => {
+    await withResend(async (calls) => {
+      const cuerpo = 'Doctor, buenos dias.\n\nLe escribo por los pacientes de la clinica.';
+      const r = await sendMaterial('l_email_realsend2', { via: 'resend', message: cuerpo }, setterACookie);
+      expect(r.status).toBe(200);
+      const p = calls[0].payload;
+      // Membretado: tabla de 600px + filete bronce + firma, sin imágenes (D-18).
+      expect(p.html).toContain('max-width:600px');
+      expect(p.html).toContain('#A67C1B');
+      expect(p.html).toContain('vincca.co');
+      expect(p.html).toContain('Ignacio Ana');
+      expect(p.html).not.toContain('<img');
+      // El cuerpo llegó adentro del html, en párrafos.
+      expect(p.html).toContain('Le escribo por los pacientes');
+      // text/plain = el cuerpo crudo, con sus saltos, sin HTML.
+      expect(p.text).toBe(cuerpo);
+      expect(p.text).not.toContain('<');
+    });
+  });
+
+  it('25. sin REPLY_TO_EMAIL la clave reply_to se OMITE (Resend rechaza un reply_to vacío); con ella, va', async () => {
+    await withResend(async (calls) => {
+      await sendMaterial('l_email_realsend2', { via: 'resend', message: 'hola' }, setterACookie);
+      expect('reply_to' in calls[0].payload).toBe(false);
+    });
+    await withResend(async (calls) => {
+      await sendMaterial('l_email_realsend2', { via: 'resend', message: 'hola' }, setterACookie);
+      expect(calls[0].payload.reply_to).toBe('respuestas@vincca.co');
+    }, { replyTo: 'respuestas@vincca.co' });
+  });
+
+  it('26. el envío real deja el registro como CONFIRMADO (infoSentAuto=false), a diferencia del mailto', async () => {
+    await withResend(async () => {
+      const r = await sendMaterial('l_email_realsend2', { via: 'resend', message: 'confirmado' }, setterACookie);
+      expect(r.status).toBe(200);
+      const l = readLead('l_email_realsend2');
+      expect(l.infoSentAuto).toBe(false);   // el proveedor lo aceptó
+      expect(l.infoSentCanal).toBe('email');
+    });
+  });
+
+  it('27. OBS-06: la dirección de 47 chars se guarda ENTERA en interactions (antes se cortaba a 40)', async () => {
+    await withResend(async () => {
+      const r = await sendMaterial('l_email_realsend', { via: 'resend', message: 'para el registro' }, setterACookie);
+      expect(r.status).toBe(200);
+      const l = readLead('l_email_realsend');
+      const ev = (l.interactions || []).filter((i) => i.action === 'material_sent').pop();
+      expect(ev).toBeTruthy();
+      expect(ev.to).toBe('consultorio.odontologico.dra.perez@example.test');
+      expect(ev.to.length).toBe(47);
+    });
+  });
+
+  it('28. CONF-03: con la key pero SIN PLACEHOLDER_FROM_EMAIL no se intenta el envío — 409 con mailtoUrl, cero fetch', async () => {
+    await withResend(async (calls) => {
+      const before = readLead('l_email_nofrom');
+      const r = await sendMaterial('l_email_nofrom', { via: 'resend', message: 'sin from' }, setterACookie);
+      expect(r.status).toBe(409);
+      expect(r.body.resendUnavailable).toBe(true);
+      expect(typeof r.body.mailtoUrl).toBe('string');
+      // Lo que importa: NO se intentó mandar desde el sandbox de Resend.
+      expect(calls.length).toBe(0);
+      // Y no se registró nada (el corte es antes de la mutación).
+      const after = readLead('l_email_nofrom');
+      expect(after.infoSentAt || '').toBe(before.infoSentAt || '');
+    }, { from: '' });
+  });
+
+  it('29. si Resend rechaza el envío → 502 y NO se registra un envío que no ocurrió', async () => {
+    await withResend(async (calls) => {
+      const before = readLead('l_email_502');
+      const r = await sendMaterial('l_email_502', { via: 'resend', message: 'esto falla' }, setterACookie);
+      expect(r.status).toBe(502);
+      expect(calls.length).toBe(1);        // se intentó…
+      const after = readLead('l_email_502');
+      expect(after.infoSentAt || '').toBe(before.infoSentAt || '');  // …y no se anotó
+      expect((after.interactions || []).filter((i) => i.action === 'material_sent').length).toBe(0);
+    }, { ok: false });
   });
 });

@@ -9550,7 +9550,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           _dispoAnnounce(leadId, { lead: d.lead, forceToast: true });
         } catch (e) {
           if (e && e.name === 'AbortError') {
-            window.showToast?.('El envío tardó demasiado (más de 20s) y se canceló. Probá de nuevo, o usá "Abrir mi cliente de mail".', { type: 'error', duration: 9000 });
+            // Auditoría 2026-09-03 (OBS-05): antes decía que el envío "se
+            // canceló". Es falso y peligroso: el abort corta la LECTURA de la
+            // respuesta, no el request — el server puede haber mandado el mail
+            // igual (el fetch a Resend no lleva la señal). Reintentar a ciegas
+            // le manda el correo dos veces al mismo doctor. El timeout de 20s
+            // se queda como está: existe para que el botón no cuelgue en
+            // "Mandando…" si el backend se traba (commit 0f4d5ce).
+            window.showToast?.('Tardó más de 20s y dejamos de esperar la respuesta. OJO: puede haber salido igual — mirá el historial del lead antes de reintentar.', { type: 'warn', duration: 12000 });
           } else {
             window.showToast?.('Error de red mandando material: ' + e.message, { type: 'error' });
           }
