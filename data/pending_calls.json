@@ -1,34 +1,6 @@
 {
   "pending": [
     {
-      "id": "pc_l_makrozclnicadentofacial_528123874914_1786985321311",
-      "leadId": "l_makrozclnicadentofacial_528123874914",
-      "leadName": "Makroz clínica dentofacial",
-      "setterId": "setter_ignacio",
-      "userId": "user_admin_ignacio",
-      "startedAt": "2026-08-17T16:48:41.311Z",
-      "endedAt": "2026-08-17T16:49:20.794Z",
-      "durationSecs": 38,
-      "fromNumber": "+17867725783",
-      "reachedActive": true,
-      "createdAt": "2026-08-17T16:48:41.370Z",
-      "updatedAt": "2026-08-17T16:49:20.856Z"
-    },
-    {
-      "id": "pc_l_dentistamakemesmiletj_526649764774_1786985901917",
-      "leadId": "l_dentistamakemesmiletj_526649764774",
-      "leadName": "Dentista - Make Me Smile TJ",
-      "setterId": "setter_ignacio",
-      "userId": "user_admin_ignacio",
-      "startedAt": "2026-08-17T16:58:21.917Z",
-      "endedAt": "2026-08-17T16:59:53.872Z",
-      "durationSecs": 91,
-      "fromNumber": "+17866870849",
-      "reachedActive": true,
-      "createdAt": "2026-08-17T16:58:21.976Z",
-      "updatedAt": "2026-08-17T16:59:53.938Z"
-    },
-    {
       "id": "pc_l_clinicaodontologicadentalwhite_576023866240_1787352057980",
       "leadId": "l_clinicaodontologicadentalwhite_576023866240",
       "leadName": "Clinica Odontologica Dental White",
