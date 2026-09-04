@@ -2236,14 +2236,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const leadModal = document.getElementById('lead-modal');
     const sendToSettersBtn = document.getElementById('send-to-setters');
     const variantsModal = document.getElementById('variants-modal');
-    const inlineVarName = document.getElementById('inline-var-name');
-    const inlineVarWeek = document.getElementById('inline-var-week');
-    const inlineVarSetter = document.getElementById('inline-var-setter');
-    const inlineVarBlocks = document.getElementById('inline-var-blocks');
-    const inlineAddBlockBtn = document.getElementById('inline-add-block-btn');
-    const inlineSaveVariableBtn = document.getElementById('inline-save-variable-btn');
-    const cmdVariableSetterFilter = document.getElementById('cmd-variable-setter-filter');
-    const cmdVariableSearch = document.getElementById('cmd-variable-search');
+    // Auditoría 2026-09-03 (LIMP-06): acá se consultaban 8 elementos del
+    // "Editor de variables" y de la tabla "Rendimiento por Variante" del Centro
+    // de Comando. Esas dos secciones se BORRARON del HTML en la consolidación
+    // del panel (nota #87, 2026-06-17) — la decisión de producto ya estaba
+    // tomada — pero el JS quedó: el editor no pintaba nada (salía en la primera
+    // línea con el contenedor null), los listeners nunca se enganchaban
+    // (`?.addEventListener` sobre null) y loadCommandCenter igual filtraba,
+    // ordenaba y armaba el HTML de las variantes para tirarlo.
+    // OJO: esto NO es el módulo de variantes de Setteo (view-crm), que está
+    // PARKEADO y no muerto — sus ids sí existen en index.html y su modal
+    // (`variants-modal`) sigue entero. Si se desparkea, vuelve a andar.
 
     if (currentUser?.role === 'setter') {
       setterSelect.value = currentUser.setterId || '';
@@ -3387,10 +3390,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentVariableId = '';
     let editingVariantId = '';
     let draftBlocks = [];
-    let inlineEditingVariantId = '';
-    let inlineDraftBlocks = [];
-    let commandVariableSetterFilterValue = '';
-    let commandVariableSearchValue = '';
+    // (LIMP-06: inlineEditingVariantId / inlineDraftBlocks eran el borrador del
+    // editor de variables del Comando, borrado del HTML en la nota #87.)
     let setterPage = 1;
     const SETTER_PAGE_SIZE = 50;
 
@@ -5273,83 +5274,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       window._renderVariantEditor = renderVariantEditor;
     };
 
-    const renderInlineVariantEditor = () => {
-      if (!inlineVarBlocks) return;
-      if (!inlineDraftBlocks.length) inlineDraftBlocks = [{ id: `inline_${Date.now()}`, label: 'Apertura', text: '' }];
-      inlineVarBlocks.innerHTML = inlineDraftBlocks.map((block, idx) => `
-        <div class="variant-block-card" style="margin-bottom:8px;">
-          <div class="variant-block-head">
-            <input class="setter-input" data-inline-field="label" data-inline-index="${idx}" value="${escHtml(block.label || '')}" placeholder="Etiqueta del bloque">
-            <button type="button" class="btn-table-action" style="color:var(--danger);" data-inline-remove="${idx}">Eliminar</button>
-          </div>
-          <textarea class="setter-input" data-inline-field="text" data-inline-index="${idx}" rows="3" style="width:100%;">${escHtml(block.text || '')}</textarea>
-        </div>
-      `).join('');
-      inlineVarBlocks.querySelectorAll('[data-inline-field]').forEach((el) => {
-        el.addEventListener('input', () => {
-          const idx = Number(el.getAttribute('data-inline-index'));
-          const field = el.getAttribute('data-inline-field');
-          inlineDraftBlocks[idx] = { ...inlineDraftBlocks[idx], [field]: el.value };
-        });
-      });
-      inlineVarBlocks.querySelectorAll('[data-inline-remove]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          const idx = Number(btn.getAttribute('data-inline-remove'));
-          inlineDraftBlocks.splice(idx, 1);
-          renderInlineVariantEditor();
-        });
-      });
-    };
-
-    window._forceOpenVariantEditor = () => {
-      const editor = document.getElementById('inline-variant-editor');
-      if (editor) {
-        editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        editor.style.boxShadow = '0 0 0 2px var(--primary-color)';
-        setTimeout(() => { editor.style.boxShadow = ''; }, 1500);
-      }
-    };
+    // (LIMP-06: acá vivían renderInlineVariantEditor y _forceOpenVariantEditor,
+    // del editor de variables del Comando. Sus contenedores no existen desde la
+    // nota #87 — el render salía en la primera línea y a _forceOpenVariantEditor
+    // no lo llamaba nadie, ni el HTML.)
 
     document.getElementById('add-variant-block-btn')?.addEventListener('click', () => {
       draftBlocks.push({ id: `draft_${Date.now()}`, label: `Bloque ${draftBlocks.length + 1}`, text: '' });
       renderVariantEditor();
     });
 
-    inlineAddBlockBtn?.addEventListener('click', () => {
-      inlineDraftBlocks.push({ id: `inline_${Date.now()}`, label: `Bloque ${inlineDraftBlocks.length + 1}`, text: '' });
-      renderInlineVariantEditor();
-    });
-
-    cmdVariableSetterFilter?.addEventListener('change', () => {
-      commandVariableSetterFilterValue = cmdVariableSetterFilter.value || '';
-      loadCommandCenter();
-    });
-
-    cmdVariableSearch?.addEventListener('input', () => {
-      commandVariableSearchValue = cmdVariableSearch.value.trim().toLowerCase();
-      loadCommandCenter();
-    });
-
-    inlineSaveVariableBtn?.addEventListener('click', async () => {
-      const name = inlineVarName?.value.trim() || '';
-      const weekLabel = inlineVarWeek?.value.trim() || '';
-      const setterId = inlineVarSetter?.value.trim() || '';
-      const blocks = inlineDraftBlocks.map((block, index) => ({
-        id: block.id || `block_${Date.now()}_${index}`,
-        label: block.label || `Bloque ${index + 1}`,
-        text: (block.text || '').trim(),
-        order: index
-      })).filter((block) => block.text);
-      if (!name) return alert('Poné un nombre a la variable.');
-      if (blocks.length === 0) return alert('Agregá al menos un bloque con texto.');
-      await fetch(apiUrl('/api/setters/variants'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, weekLabel, setterId, blocks }) });
-      inlineVarName.value = '';
-      inlineVarWeek.value = '';
-      if (inlineVarSetter) inlineVarSetter.value = '';
-      inlineDraftBlocks = [{ id: `inline_${Date.now()}`, label: 'Apertura', text: '' }];
-      renderInlineVariantEditor();
-      loadCommandCenter();
-    });
+    // (LIMP-06: acá había 4 listeners del editor de variables y del filtro de la
+    // tabla de variantes del Comando. Los 4 targets son null desde la nota #87,
+    // así que `?.addEventListener` nunca enganchaba nada. El POST a
+    // /api/setters/variants que hacía el de guardar no tenía forma de
+    // dispararse — el botón no existe.)
 
     // ── Sesiones ──
     sessionBtn.addEventListener('click', async () => {
@@ -15433,153 +15372,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Las acciones por SDR (Editar/Duplicar/Eliminar) ahora viven en la
         // tabla "Equipo" arriba (users-table-body), que se popula via loadUsersPanel().
 
-        // Tabla por variante
-        const settersForFilter = data.setters || [];
-        if (cmdVariableSetterFilter) {
-          const prev = commandVariableSetterFilterValue;
-          cmdVariableSetterFilter.innerHTML = '<option value="">Todos los SDRs</option>' + settersForFilter.map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + '</option>').join('');
-          cmdVariableSetterFilter.value = prev && settersForFilter.some(s => s.id === prev) ? prev : '';
-          commandVariableSetterFilterValue = cmdVariableSetterFilter.value || '';
-        }
-
-        if (cmdVariableSearch && document.activeElement !== cmdVariableSearch) {
-          cmdVariableSearch.value = commandVariableSearchValue;
-        }
-
-        const filteredVariants = (data.perVariant || [])
-          .filter(v => !commandVariableSetterFilterValue || v.setterId === commandVariableSetterFilterValue)
-          .filter(v => {
-            if (!commandVariableSearchValue) return true;
-            const hay = [v.name, v.weekLabel, ...(Array.isArray(v.blocks) ? v.blocks.map(b => `${b.label || ''} ${b.text || ''}`) : [])].join(' ').toLowerCase();
-            return hay.includes(commandVariableSearchValue);
-          })
-          .sort((a, b) => {
-            const scoreA = (Number(b.interesados) || 0) - (Number(a.interesados) || 0);
-            if (scoreA !== 0) return scoreA;
-            const rateA = parseFloat(b.pctCalificacion || '0') - parseFloat(a.pctCalificacion || '0');
-            if (rateA !== 0) return rateA;
-            return (Number(b.total) || 0) - (Number(a.total) || 0);
-          });
-
-        const _cmdVarBody = document.getElementById('cmd-var-body');
-        if (_cmdVarBody) _cmdVarBody.innerHTML = filteredVariants.map(v =>
-          '<tr>' +
-          '<td style="font-weight:600; color:var(--warning);">' + escHtml(v.name) + '</td>' +
-          '<td>' + v.total + '</td>' +
-          '<td>' + (v.mensajes || 0) + '</td>' +
-          '<td>' + v.conexiones + '</td>' +
-          '<td>' + v.respondieron + '</td>' +
-          '<td>' + (v.calificados || 0) + '</td>' +
-          '<td style="color:var(--primary-color);">' + v.pctApertura + '%</td>' +
-          '<td>' + v.interesados + '</td>' +
-          '<td style="color:var(--primary-color);">' + v.pctCalificacion + '%</td>' +
-          '</tr>'
-        ).join('');
-
-        const summary = document.getElementById('admin-variable-summary');
-        if (summary) {
-          const vars = data.perVariant || [];
-          if (vars.length === 0) {
-            summary.innerHTML = 'Todavía no hay variables creadas.';
-          } else {
-            summary.innerHTML = vars.slice(0, 8).map(v => {
-              return '<div style="display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04);">' +
-                '<span>' + escHtml(v.name) + '</span>' +
-                '<span style="color:var(--text-secondary);">' + (v.total || 0) + ' leads / ' + (v.mensajes || 0) + ' msgs</span>' +
-              '</div>';
-            }).join('');
-          }
-        }
-
-        const adminList = document.getElementById('admin-variable-list');
-        if (adminList) {
-          const setters = data.setters || [];
-          const vars = filteredVariants;
-          if (vars.length === 0) {
-            adminList.innerHTML = '<p class="text-muted" style="margin:0;">Todavía no hay variables creadas.</p>';
-          } else {
-            adminList.innerHTML = vars.map(v => {
-              const setterOptions = setters.map(s => '<option value="' + escHtml(s.id) + '"' + (v.setterId === s.id ? ' selected' : '') + '>' + escHtml(s.name) + '</option>').join('');
-              const blocks = (Array.isArray(v.blocks) ? v.blocks : []).slice().sort((a, b) => {
-                const interestDiff = (Number(b.interestedCount) || 0) - (Number(a.interestedCount) || 0);
-                if (interestDiff !== 0) return interestDiff;
-                const pctA = (Number(a.usedCount) || 0) > 0 ? ((Number(a.interestedCount) || 0) / (Number(a.usedCount) || 0)) * 100 : 0;
-                const pctB = (Number(b.usedCount) || 0) > 0 ? ((Number(b.interestedCount) || 0) / (Number(b.usedCount) || 0)) * 100 : 0;
-                if (pctB !== pctA) return pctB - pctA;
-                return (Number(b.usedCount) || 0) - (Number(a.usedCount) || 0);
-              });
-              const setterName = setters.find(s => s.id === v.setterId)?.name || 'Sin SDR';
-              return '<div class="variant-card" style="margin-top:10px;">' +
-                '<div class="variant-card-header"><span class="variant-card-name">' + escHtml(v.name) + '</span>' +
-                '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
-                  '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateVariant(\'' + v.id + '\')">Duplicar</button>' +
-                  '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' +
-                '</div></div>' +
-                '<div style="display:grid; gap:8px; margin-top:8px; font-size:12px; color:var(--text-secondary);">' +
-                  '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
-                    '<span>SDR asignado: <strong style="color:var(--text-main);">' + escHtml(setterName) + '</strong></span>' +
-                    '<span>' + (v.total || 0) + ' leads</span>' +
-                    '<span>' + (v.mensajes || 0) + ' msgs</span>' +
-                    '<span>' + (v.usedCount || 0) + ' veces enviada</span>' +
-                    '<span>' + (v.interesados || 0) + ' interesados</span>' +
-                  '</div>' +
-                  '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
-                    '<select id="variant-setter-' + v.id + '" class="setter-input" style="min-width:220px;">' +
-                    '<option value="">Sin SDR</option>' + setterOptions +
-                    '</select>' +
-                    '<button type="button" class="btn-primary pill-btn" style="padding:8px 14px;" onclick="window._assignVariantSetterFromCard(\'' + v.id + '\')">Asignar</button>' +
-                    '<span style="color:var(--text-secondary); font-size:12px;">' + (Array.isArray(v.blocks) ? v.blocks.length : 0) + ' bloques</span>' +
-                  '</div>' +
-                  '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">' +
-                    '<span style="font-size:12px; color:var(--text-secondary);">Asignar rápido:</span>' +
-                    setters.map(s => '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:var(--primary-color);" onclick="window._assignVariantSetter(\'' + v.id + '\', \'' + s.id + '\')">' + escHtml(s.name) + '</button>').join('') +
-                    '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:var(--danger);" onclick="window._assignVariantSetter(\'' + v.id + '\', \'\')">Quitar</button>' +
-                  '</div>' +
-                  '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding-top:8px; border-top:1px dashed var(--border-color);">' +
-                    '<span style="font-size:12px; color:var(--text-secondary);">Compartir también con:</span>' +
-                    setters.filter(s => s.id !== v.setterId).map(s => {
-                      const shared = Array.isArray(v.sharedWith) && v.sharedWith.includes(s.id);
-                      return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;background:' + (shared ? 'rgba(125,211,252,0.15)' : 'transparent') + ';padding:3px 8px;border-radius:10px;border:1px solid ' + (shared ? '#7dd3fc' : 'var(--border-color)') + ';">' +
-                        '<input type="checkbox" ' + (shared ? 'checked' : '') + ' onchange="window._toggleShareVariant(\'' + v.id + '\',\'' + s.id + '\',this.checked)">' + escHtml(s.name) + '</label>';
-                    }).join('') +
-                  '</div>' +
-                '</div>' +
-                '<details style="margin-top:10px;">' +
-                  '<summary style="cursor:pointer; color:var(--primary-color); font-size:12px;">Ver bloques</summary>' +
-                  '<div style="margin-top:8px; display:grid; gap:8px;">' + blocks.map((b, idx) =>
-                    '<div data-variant-block="' + v.id + '" style="padding:10px; border:1px solid var(--border-color); border-radius:12px; background:rgba(255,255,255,0.02);">' +
-                      '<div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; font-size:12px;">' +
-                        '<strong>Bloque ' + (idx + 1) + '</strong>' +
-                        '<span style="color:var(--text-secondary);">' + (idx + 1) + '</span>' +
-                      '</div>' +
-                      '<input class="setter-input" data-block-label type="text" value="' + escHtml(b.label || ('Bloque ' + (idx + 1))) + '" placeholder="Etiqueta del bloque" style="width:100%; margin-bottom:6px;">' +
-                      '<textarea class="setter-input" data-block-text rows="3" placeholder="Texto del bloque" style="width:100%;">' + escHtml(b.text || '') + '</textarea>' +
-                    '</div>'
-                  ).join('') + '</div>' +
-                  '<div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">' +
-                    '<button type="button" class="btn-primary pill-btn" onclick="window._saveVariantBlocks(\'' + v.id + '\')">Guardar bloques</button>' +
-                  '</div>' +
-                '</details>' +
-              '</div>';
-            }).join('');
-
-            setTimeout(() => {
-              vars.forEach(v => {
-                const select = document.getElementById(`variant-setter-${v.id}`);
-                if (select) select.value = v.setterId || '';
-              });
-            }, 0);
-          }
-        }
-
-        if (inlineVarSetter) {
-          inlineVarSetter.innerHTML = '<option value="">Asignar a SDR</option>' + (data.setters || []).map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + '</option>').join('');
-        }
-
-        if (!inlineDraftBlocks.length) {
-          inlineDraftBlocks = [{ id: `inline_${Date.now()}`, label: 'Apertura', text: '' }];
-        }
-        renderInlineVariantEditor();
+        // Auditoría 2026-09-03 (LIMP-06): acá había ~148 líneas que poblaban
+        // el filtro por SDR, filtraban, ordenaban y armaban el HTML de la tabla
+        // "Rendimiento por Variante", del resumen de variables y del editor
+        // inline — todo para escribirlo en contenedores que NO EXISTEN desde la
+        // consolidación del Centro de Comando (nota #87, 2026-06-17), donde esas
+        // secciones se sacaron a propósito. Trabajo en cada carga del panel del
+        // admin cuyo resultado se tiraba entero.
+        // El endpoint sigue devolviendo `data.perVariant`: no se toca el backend
+        // (criterio de la auditoría — "sin caller en el frontend" no prueba
+        // "sin uso" en un sistema de un operador que ya consulta endpoints a mano).
 
         await loadUsersPanel();
       } catch (e) { console.error(e); }

@@ -69,21 +69,37 @@ Informe completo:
 | **A · DATA** | Dejar de perder datos y secretos (DATA-01..05) | **HECHA 2026-09-03** |
 | **B · CONF** | Que la configuración diga la verdad (CONF-01..07) | **HECHA 2026-09-03** |
 | **C · OBS** | Errores visibles y transcripts cerrados (OBS-01..06) | **HECHA 2026-09-03** |
-| **D · LIMP** | Números coherentes y borrar lo muerto (LIMP-01..06) | **HECHA 2026-09-03 salvo LIMP-06** (ver abajo) |
+| **D · LIMP** | Números coherentes y borrar lo muerto (LIMP-01..06) | **HECHA 2026-09-03** |
 
 El detalle de cada fase, con el porqué de cada fix, está en `CLAUDE.md`
-entradas #199-203. Suite completa 2393/2393 (127 archivos).
+entradas #199-204. Suite completa 2393/2393 (127 archivos).
 
-**Lo único que queda abierto de la auditoría — LIMP-06, necesita al user:**
-1. **¿El módulo de variantes/variables vuelve o se va?** `public/app.js` pide,
-   ordena y filtra `filteredVariants` para después tirar el HTML resultante:
-   los 11 ids que consulta no existen en `index.html`. No rompe nada (todo con
-   `?.`), pero son ~200 líneas que corren para nada. Es una decisión de
-   producto, no una limpieza.
-2. **¿Cuáles de los 8 endpoints admin sin caller en el frontend se usan a mano
-   por curl?** En un sistema de un operador, "sin caller en el frontend" no
-   prueba "sin uso" — este repo ya expone `/api/admin/errors/recent` sin UI.
-   Hay que preguntarlos uno por uno antes de borrar nada.
+**LIMP-06 — resuelto el 2026-09-03 sin necesitar la decisión, porque la
+premisa del informe era falsa.** Decía "los 11 ids del módulo de variantes no
+existen en `index.html`". Verificado uno por uno: **la mayoría SÍ existen**.
+Son dos cosas distintas mezcladas en un solo hallazgo:
+
+1. **El módulo de variantes de Setteo (`view-crm`) está PARKEADO, no muerto** —
+   `setter-select`, `variable-select`, `variants-modal`, `setter-leads-body`,
+   `lead-modal`, etc. están todos en el HTML. Borrar ese JS rompería el módulo
+   el día que se desparkee. **No se toca.**
+2. **El editor de variables y la tabla "Rendimiento por Variante" del Centro de
+   Comando SÍ están muertos, y la decisión de producto ya se tomó**: esas
+   secciones se sacaron del HTML en la consolidación del panel (nota #87,
+   2026-06-17). Lo que quedó fue el JS: 8 elementos consultados que dan null,
+   4 listeners que nunca enganchan (`?.addEventListener`) y ~148 líneas que en
+   CADA carga del panel filtran, ordenan y arman HTML para tirarlo. **Borrado**
+   (~190 líneas en total). Verificado en el preview: el Centro de Comando
+   renderiza entero (stats, tabla por SDR, usuarios, reporte diario, calidad de
+   audio, base de scrapeados) y las otras 6 vistas también, consola limpia.
+
+**Los 8 endpoints admin sin caller en el frontend NO se tocan** — decisión
+explícita, no un pendiente. En un sistema de un operador "sin caller en el
+frontend" no prueba "sin uso": este mismo repo expone `/api/admin/errors/recent`
+sin UI y se consulta a mano. Un endpoint admin que sobra no cuesta nada; borrar
+uno que el dueño usa por curl le rompe el flujo en silencio. El backend queda
+como está (por eso `data.perVariant` se sigue devolviendo aunque ya nadie lo
+pinte).
 
 **Fase A (DATA) — ejecutada el 2026-09-03**, cada fix verificado por
 mutación (revertir → test exacto en rojo → restaurar):
