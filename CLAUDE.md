@@ -1458,5 +1458,58 @@ por config. Estado y evidencia completos en `.planning/STATE.md`.
        el fix, romper la regla 1, romper la regla 2) tumban exactamente el test
        que corresponde. **Suite completa 2425/2425 (129 archivos).**
 
+212. **Fase A — marcar el resultado sin salir del Power Dialer** (mismo
+     `v=20260905a`). Dos fallas del mismo botón, las dos reproducidas en vivo:
+     con el dialer abierto desde **Hoy**, "Ir a marcar" navegaba a Llamadas, el
+     delegate del sidebar disparaba `_pdExit()` y la cola de 137 se perdía;
+     desde **Llamadas** no navegaba (la vista ya era la visible) y no pasaba
+     nada visible — el foco iba a un `<select>` detrás del overlay. Y en los dos
+     casos el gate frena el DISCADO pero no el AVANCE: dos `S` y la tarjeta
+     pasaba a otro lead con sus 9 botones marcando ese otro.
+     - Con el dialer abierto el botón dice **"Marcar acá"** y abre una capa con
+       los 9 resultados del lead TRABADO, sin tocar `_pd.currentIdx` ni la cola.
+       La tarjeta además avisa a quién van a marcar sus botones cuando el gate
+       es de otro lead.
+     - **Las teclas 1-9 de la capa se enganchan en fase de CAPTURA**: el handler
+       del dialer vive en `document` en burbuja, así que sin cortar la
+       propagación ahí la misma tecla marcaría DOS leads.
+     - Si el lead trabado ES la tarjeta, va por el camino normal del dialer
+       (hold, autopiloto). Si NO lo es, usa `_handleCallDisposition` y **nunca**
+       `_pdHandleDisposition`: su rama `if (!lead) { _pdAdvance(); return; }`
+       saltearía la tarjeta ACTUAL cuando el lead trabado no está en el cache de
+       la vista (caso real: dialer de Hoy sobre un lead que vino de Llamadas).
+     - ⚠️ **El cartel se repinta al abrir y al cerrar el dialer.** Sin eso, un
+       gate armado ANTES de abrirlo conservaba el botón viejo y seguía
+       expulsando. **Lo encontró la verificación en vivo, no el test de fuente** —
+       el test leía el código correcto sobre un cartel que nunca se re-pintaba.
+     - **`PD_DISPO_OPTIONS`** unifica el catálogo de los 9 resultados (tarjeta +
+       capa). **`_pdKeyOutcomes` se deja como literal A PROPÓSITO**: dos tests
+       independientes (`dialer-edges`, `dial-session-close-ui`) lo fijan letra
+       por letra como guard del orden tecla→resultado. La paridad entre los dos
+       la fija un test aparte — no pueden desincronizarse en silencio.
+     - Verificado end-to-end con datos de producción: cola en 3/3745, tarjeta en
+       otro lead, tecla `5` en la capa → lead trabado callLog 1→2 y **lead de la
+       tarjeta intacto**; cartel apagado, cola y tarjeta sin moverse.
+       `tests/dispo-gate-mark.test.js` (19).
+
+213. **Fase C — el historial dice DE QUÉ fueron los intentos** (mismo
+     `v=20260905a`). El bloque "Ya trabajado" ya existía (plan 33-04) y decía "3
+     intentos previos", que no alcanza para decidir en un segundo: no es lo
+     mismo que hayan atendido y cortado dos veces que que nunca hayan atendido.
+     - `_leadHistoryBrief` suma `breakdown` (conteo por resultado, **en el orden
+       del catálogo de teclas, no por frecuencia** — así el desglose de dos leads
+       se compara de un vistazo) y `postponed`.
+     - Encabezado: **"3ª llamada · cortó 1 · no atendió 2"**. Con UNA sola
+       llamada se mantiene el texto viejo (el desglose repetiría la línea de
+       abajo). A partir de la segunda vez aparece **"Pospuesta N veces"**.
+     - Es la respuesta al punto 2 del milestone: el repetido real (acumulación de
+       `callback_later`) **se muestra, no se descarta** — son compromisos que
+       tomó una persona.
+     - Verificado en vivo contra los leads reales de producción: `Clínica Dental
+       Amigó` → "3ª llamada · cortó 1 · no atendió 2"; `Wellness dental clinic` →
+       "6ª llamada · cortó 1 · buzón 1 · callback 4" + "Pospuesta 4 veces".
+       `tests/lead-history-breakdown.test.js` (13). **Suite 2457/2457 (131
+       archivos).**
+
 211. **Cache-buster actual: `app.js v=20260905a`** (reemplaza #203). `style.css`
      en `v=20260822a`, `wa.js` en `v=20260815c`.

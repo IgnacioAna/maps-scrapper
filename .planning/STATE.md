@@ -42,10 +42,10 @@ por eso la atribución por setter **se queda**.
 
 | Punto | Qué se pidió | Estado |
 |---|---|---|
-| **1** | Marcar el resultado sin salir del Power Dialer | Reproducido · pendiente |
+| **1** | Marcar el resultado sin salir del Power Dialer | **HECHA 2026-09-05** (Fase A) |
 | **2** | Los repetidos: ¿los topes se esquivan? | **Medido — no se tocan los topes** |
-| **3** | Historial visible antes de discar | **Ya existía** (plan 33-04) · falta el desglose |
-| **4** | La tarjeta no puede pisar lo que se escribe | **HECHA 2026-09-05** |
+| **3** | Historial visible antes de discar | **HECHA 2026-09-05** (Fase C, sobre lo que ya existía) |
+| **4** | La tarjeta no puede pisar lo que se escribe | **HECHA 2026-09-05** (Fase B) |
 | **5** | Inventario del modo equipo | Relevado · pendiente apagar por config |
 
 ### Lo que la verificación cambió respecto de lo que se pidió
@@ -112,6 +112,69 @@ texto `""`, foco `BODY`, cursor `0`; con el fix → texto intacto, foco en
 `pd-call-note`, cursor en 11. Y en la suite, las 3 mutaciones (sacar el fix,
 romper la regla 1, romper la regla 2) tumban exactamente el test que
 corresponde. `tests/pd-preserve-draft.test.js` (15).
+
+### Fase A — marcar el resultado sin salir del dialer · HECHA 2026-09-05
+
+Dos fallas distintas en el mismo botón, las dos reproducidas en vivo:
+
+- **El cartel expulsaba de la cola.** Con el dialer abierto desde **Hoy**,
+  "Ir a marcar" navegaba a Llamadas, el delegate del sidebar disparaba
+  `_pdExit()` y la sesión quedaba en "sesión cerrada" con 137 leads adentro.
+  Con el dialer abierto desde **Llamadas** no navegaba (la vista ya era la
+  visible) y **no pasaba nada visible**: el foco iba a un `<select>` que está
+  detrás del overlay.
+- **La tarjeta dejaba de ser la del lead trabado.** El gate frena el *discado*,
+  no el *avance*: dos `S` y la tarjeta pasaba a otro lead, con sus 9 botones
+  activos marcando ese otro mientras el cartel seguía pidiendo el resultado del
+  primero.
+
+Con el dialer abierto el botón ahora dice **"Marcar acá"** y abre una capa con
+los 9 resultados del lead **trabado**, sin tocar `_pd.currentIdx` ni la cola. Y
+la tarjeta avisa, cuando el gate es de otro lead, a quién van a marcar sus
+botones. Detalles que importan:
+
+- Las teclas 1-9 de la capa se enganchan en **fase de captura**: el handler del
+  dialer vive en `document` en burbuja, así que sin cortar ahí la misma tecla
+  marcaría **dos** leads.
+- Si el lead trabado ES la tarjeta, se va por el camino normal del dialer (hold,
+  autopiloto). Si no lo es, se usa `_handleCallDisposition` y **nunca**
+  `_pdHandleDisposition`: su rama `if (!lead) { _pdAdvance(); return; }`
+  saltearía la tarjeta actual cuando el lead trabado no está en el cache de la
+  vista — que es justo el caso del dialer de Hoy con un lead que vino de
+  Llamadas.
+- El cartel se **repinta** al abrir y al cerrar el dialer. Sin eso, un gate
+  armado *antes* de abrirlo conservaba el botón viejo y seguía expulsando.
+  **Esto lo encontró la verificación en vivo, no el test de fuente.**
+
+**Verificado end-to-end con datos de producción:** con la cola en 3/3745 y la
+tarjeta en otro lead, la tecla `5` dentro de la capa dejó el lead trabado en
+callLog 1→2 (`no_answer`, autodescartado por 2º no-contacto) y el lead de la
+tarjeta **intacto en 1**; el cartel se apagó y la cola quedó en 3/3745 con la
+misma tarjeta. `tests/dispo-gate-mark.test.js` (19).
+
+**Nota de deuda evitada:** el catálogo de los 9 resultados se unificó en
+`PD_DISPO_OPTIONS` (tarjeta + capa). `_pdKeyOutcomes` se dejó como **literal a
+propósito**: dos tests independientes (`dialer-edges`, `dial-session-close-ui`)
+lo fijan letra por letra como guard del orden tecla→resultado, y ese guard vale
+más que ahorrar una línea. La paridad entre los dos la fija un test aparte, así
+que no pueden desincronizarse en silencio.
+
+### Fase C — el historial dice de qué fueron los intentos · HECHA 2026-09-05
+
+`_leadHistoryBrief` suma `breakdown` (conteo por resultado, en el orden del
+catálogo de teclas — no por frecuencia, así dos leads se comparan de un vistazo)
+y `postponed` (las veces que el vendedor dijo "vuelvo a llamar"). El encabezado
+pasa de "3 intentos previos" a **"3ª llamada · cortó 1 · no atendió 2"**, y a
+partir de la segunda vez aparece **"Pospuesta N veces"**.
+
+Con una sola llamada se mantiene el texto viejo: el desglose sería repetir la
+línea de abajo. Verificado en vivo contra los dos leads reales de producción:
+`Clínica Dental Amigó` → "3ª llamada · cortó 1 · no atendió 2";
+`Wellness dental clinic` → "6ª llamada · cortó 1 · buzón 1 · callback 4" +
+"Pospuesta 4 veces". Es la respuesta al punto 2: el repetido se muestra, no se
+descarta. `tests/lead-history-breakdown.test.js` (13).
+
+**Suite completa 2457/2457 (131 archivos).**
 
 ### Nota sobre los artefactos GSD de este milestone
 

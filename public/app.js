@@ -6423,10 +6423,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const commitLine = brief.commitment
         ? `<div style="margin-top:5px; color:${brief.commitment.vencido ? 'var(--warning)' : 'var(--text-secondary)'};">${brief.commitment.vencido ? 'Compromiso vencido' : 'Compromiso pendiente'}: ${escHtml(brief.commitment.label)}${brief.commitment.when ? ` <span style="opacity:0.75;">· ${escHtml(brief.commitment.when)}</span>` : ''}</div>`
         : '';
-      const attemptsTxt = brief.attempts > 0 ? `${brief.attempts} intento${brief.attempts > 1 ? 's' : ''} previo${brief.attempts > 1 ? 's' : ''}` : '';
+      // [SOLO-C] Con 2 llamadas o más, el encabezado deja de decir "N intentos
+      // previos" y pasa a decir de QUÉ fueron esos intentos: "3a llamada ·
+      // cortó 1 · no atendió 2". Con una sola llamada el desglose sería repetir
+      // lo que ya dice la línea de abajo, así que se mantiene el texto viejo.
+      const _desglose = (brief.attempts >= 2 && brief.breakdown && brief.breakdown.length)
+        ? brief.breakdown.map((b) => `${b.label.toLowerCase()} ${b.n}`).join(' · ')
+        : '';
+      const attemptsTxt = _desglose
+        ? `${brief.attempts}ª llamada · ${_desglose}`
+        : (brief.attempts > 0 ? `${brief.attempts} intento${brief.attempts > 1 ? 's' : ''} previo${brief.attempts > 1 ? 's' : ''}` : '');
+      // El contador de veces pospuesta va aparte y solo a partir de la segunda:
+      // es la señal de "esto se viene arrastrando", no un dato de color.
+      const postponedLine = (brief.postponed >= 2)
+        ? `<div style="margin-top:5px; color:var(--warning, #FFB341);">Pospuesta <strong>${escHtml(String(brief.postponed))}</strong> veces</div>`
+        : '';
       return `<div style="margin-top:14px; background:var(--bg-app); border:1px solid var(--border-subtle); padding:10px 13px; border-radius:10px; font-size:12.5px; line-height:1.5;">
         <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:5px;">Ya trabajado${attemptsTxt ? ` · ${escHtml(attemptsTxt)}` : ''}</div>
         ${lastLine ? `<div>${lastLine}</div>` : ''}
+        ${postponedLine}
         ${noteLine}
         ${commitLine}
       </div>`;
@@ -7196,6 +7211,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       _pd.processed = 0;
       _pd.active = true;
+      // [SOLO-A] El cartel decide su botón según si el dialer está abierto, y
+      // se pinta UNA sola vez (al armarse el gate). Sin este repintado, un gate
+      // armado ANTES de abrir el dialer conservaba el botón "Ir a marcar" y
+      // seguía expulsando de la cola. Encontrado verificando en vivo, no por el
+      // test de fuente.
+      _dispoGateRenderBanner();
       // Fase 37 (SES-01): abrir el dialer y abrir la sesión de discado del
       // servidor son lo mismo — se llama DESPUÉS de todos los early-return
       // de arriba (cola vacía / "no hay leads cargados"), fire-and-forget
@@ -7310,6 +7331,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _pdExitFinal() {
       _pdCancelAutopilot();
       _pd.active = false;
+      // [SOLO-A] Fuera del dialer el botón vuelve a ser "Ir a marcar" (ver el
+      // repintado gemelo en _pdStart).
+      _dispoGateRenderBanner();
       _pd.closing = false;
       _pdSession.id = null;
       _pdSession.startedAt = null;
@@ -7917,6 +7941,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pdRender();
       return true;
     }
+    // ─── [SOLO-A] Catálogo único de los 9 resultados del dialer ───
+    // Antes esto vivía duplicado: el orden de las teclas en `_pdKeyOutcomes` y
+    // los labels/colores inline en el template de la tarjeta. La capa de
+    // "marcar sin salir del dialer" habría sido una TERCERA copia — y tres
+    // copias del mismo orden se desincronizan solas (ya pasó una vez: el
+    // shortcut de la lista se sincronizó a mano con el grid en 2026-07-23).
+    // Una sola definición: el orden del array ES el número de la tecla.
+    const PD_DISPO_OPTIONS = [
+      { v:'answered_interested',     k:'1', label:'Interesado',      sub:'marca interés',       color:'success' },
+      { v:'scheduled_with_admin',    k:'2', label:'Agendar',         sub:'reserva la reunión',  color:'accent'  },
+      { v:'answered_not_interested', k:'3', label:'No interesado',   sub:'escuchó y dijo no',   color:'danger'  },
+      { v:'hung_up',                 k:'4', label:'Me cortó',        sub:'atendió y colgó',     color:'danger'  },
+      { v:'no_answer',               k:'5', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
+      { v:'voicemail',               k:'6', label:'Buzón',           sub:'voice mail',          color:'warning' },
+      { v:'callback_later',          k:'7', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
+      { v:'wrong_number',            k:'8', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
+      { v:'invalid_number',          k:'9', label:'No existe',       sub:'inválido / desact.',  color:'neutral' },
+    ];
+    const _pdDispoGridHTML = (leadId) => PD_DISPO_OPTIONS.map(d =>
+      `<button type="button" class="pd-disp-btn pd-disp-${d.color}" data-outcome="${d.v}" onclick="window._pdHandleDispositionDirect('${escHtml(leadId)}', '${d.v}')">
+            <div class="pd-disp-key">${d.k}</div>
+            <div class="pd-disp-text">
+              <div class="pd-disp-label">${d.label}</div>
+              <div class="pd-disp-sub">${d.sub}</div>
+            </div>
+          </button>`).join('');
+
     // ─── [SOLO-B] El re-render no pisa lo que se está escribiendo ───
     // _pdRender reescribe el innerHTML ENTERO de #pd-current-content, y ahí
     // adentro vive #pd-call-note. Cualquiera de sus ~11 llamadores (guardar
@@ -8303,6 +8354,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span>Resultado de la llamada</span>
           <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-9</span>
         </div>
+        ${(_dispoGate && _dispoGate.leadId !== lead.id) ? `<div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:9px 12px; background:rgba(255,179,65,0.10); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; border-radius:8px; font-size:12px; color:var(--text-secondary);">
+          <span style="min-width:0;">Quedó sin marcar la llamada a <strong style="color:var(--text-primary);">${escHtml(_dispoGate.leadName || 'otro lead')}</strong>. Estos botones marcan a <strong style="color:var(--text-primary);">${escHtml(lead.name || 'este lead')}</strong>.</span>
+          <button type="button" onclick="window._dispoGateMark()" style="margin-left:auto; padding:6px 12px; background:rgba(255,179,65,0.18); color:#FFB341; border:1px solid rgba(255,179,65,0.45); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Marcar el otro</button>
+        </div>` : ''}
         <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:stretch;">
           <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada — ej: contestó la secre, pedir por Dr. X el martes" style="flex:1; min-width:240px; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
           <button type="button" onclick="window._pdSaveNote('${escHtml(lead.id)}')" title="Guarda la nota en la ficha del lead sin cerrar la llamada con un resultado" style="padding:9px 16px; background:var(--accent-medium); color:var(--accent); border:1px solid var(--accent-strong); border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Guardar nota</button>
@@ -8332,23 +8387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
         </div>
         <div class="pd-disposition-grid">
-          ${[
-            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'marca interés',       color:'success' },
-            { v:'scheduled_with_admin',    k:'2', label:'Agendar',         sub:'reserva la reunión',  color:'accent'  },
-            { v:'answered_not_interested', k:'3', label:'No interesado',   sub:'escuchó y dijo no',   color:'danger'  },
-            { v:'hung_up',                 k:'4', label:'Me cortó',        sub:'atendió y colgó',     color:'danger'  },
-            { v:'no_answer',               k:'5', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
-            { v:'voicemail',               k:'6', label:'Buzón',           sub:'voice mail',          color:'warning' },
-            { v:'callback_later',          k:'7', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
-            { v:'wrong_number',            k:'8', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
-            { v:'invalid_number',          k:'9', label:'No existe',       sub:'inválido / desact.',  color:'neutral' }
-          ].map(d => `<button type="button" class="pd-disp-btn pd-disp-${d.color}" data-outcome="${d.v}" onclick="window._pdHandleDispositionDirect('${escHtml(lead.id)}', '${d.v}')">
-            <div class="pd-disp-key">${d.k}</div>
-            <div class="pd-disp-text">
-              <div class="pd-disp-label">${d.label}</div>
-              <div class="pd-disp-sub">${d.sub}</div>
-            </div>
-          </button>`).join('')}
+          ${_pdDispoGridHTML(lead.id)}
         </div>
       </div>`;
 
@@ -8676,6 +8715,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Mapa de teclas numéricas → outcomes (mismo orden que el grid de disposition).
+    // [SOLO-A] Este literal NO se deriva de PD_DISPO_OPTIONS a propósito: dos
+    // tests independientes (dialer-edges, dial-session-close-ui) lo fijan letra
+    // por letra como guard del orden tecla→resultado, y ese guard vale más que
+    // ahorrar una línea. La paridad entre los dos la fija un test aparte
+    // (tests/dispo-gate-mark.test.js), así que no pueden desincronizarse en
+    // silencio: si alguien toca uno sin el otro, el CI lo caza.
     const _pdKeyOutcomes = ['answered_interested','scheduled_with_admin','answered_not_interested','hung_up','no_answer','voicemail','callback_later','wrong_number','invalid_number'];
 
     // Shortcuts globales para power dialer
@@ -10668,9 +10713,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _dispoGateRenderBanner() {
       const el = _dispoGateEnsureBanner();
       if (!_dispoGate) { el.style.display = 'none'; el.innerHTML = ''; return; }
-      el.innerHTML = `<span>Marcá el resultado de la llamada a <strong>${escHtml(_dispoGate.leadName || 'tu último lead')}</strong> para seguir discando</span><button type="button" id="dispo-gate-go">Ir a marcar</button>`;
+      // [SOLO-A] Con el Power Dialer abierto, "Ir a marcar" hacía daño de dos
+      // formas distintas, verificadas en vivo el 2026-09-05:
+      //  · dialer abierto desde HOY → _dispoFocusLeadRow navega a Llamadas, el
+      //    delegate del sidebar dispara _pdExit() y la cola se pierde
+      //    ("sesión cerrada" con 137 leads adentro);
+      //  · dialer abierto desde LLAMADAS → no navega (la vista ya es la
+      //    visible), así que el foco va a un <select> que está DETRÁS del
+      //    overlay: el SDR clickea y no pasa nada visible.
+      // Con el dialer abierto el resultado se marca en una capa encima, sin
+      // mover el índice de la cola.
+      const _enDialer = (typeof _pd !== 'undefined') && _pd.active;
+      el.innerHTML = `<span>Marcá el resultado de la llamada a <strong>${escHtml(_dispoGate.leadName || 'tu último lead')}</strong> para seguir discando</span><button type="button" id="dispo-gate-go">${_enDialer ? 'Marcar acá' : 'Ir a marcar'}</button>`;
       el.style.display = 'flex';
-      el.querySelector('#dispo-gate-go')?.addEventListener('click', () => _dispoFocusLeadRow(_dispoGate?.leadId));
+      el.querySelector('#dispo-gate-go')?.addEventListener('click', () => {
+        if ((typeof _pd !== 'undefined') && _pd.active) window._dispoGateMark();
+        else _dispoFocusLeadRow(_dispoGate?.leadId);
+      });
     }
 
     // Pulso visual del banner (mismo espíritu que el flash de la call-row).
@@ -10754,6 +10813,97 @@ document.addEventListener('DOMContentLoaded', async () => {
       go();
     }
 
+    // ─── [SOLO-A] Marcar el resultado del lead trabado SIN salir del dialer ───
+    // La cola no se toca: ni _pd.currentIdx, ni _pd.queue, ni el hold. Al
+    // cerrar, el SDR sigue exactamente en el lead que estaba.
+    let _dispoGateMarkEl = null;
+    let _dispoGateMarkKeys = null;
+
+    window._dispoGateCloseMark = function() {
+      if (_dispoGateMarkKeys) { document.removeEventListener('keydown', _dispoGateMarkKeys, true); _dispoGateMarkKeys = null; }
+      if (_dispoGateMarkEl) { _dispoGateMarkEl.remove(); _dispoGateMarkEl = null; }
+    };
+
+    window._dispoGateMark = function() {
+      if (!_dispoGate?.leadId) return;
+      window._dispoGateCloseMark();
+      const trabadoId = _dispoGate.leadId;
+      const trabadoNombre = _dispoGate.leadName || 'tu último lead';
+      // ¿El lead trabado es la tarjeta que se está viendo? Cambia por dónde se
+      // marca (ver _dispoGateMarcar), no lo que se muestra.
+      const esLaTarjeta = (typeof _pd !== 'undefined') && _pd.active && _pd.queue[_pd.currentIdx] === trabadoId;
+
+      const ov = document.createElement('div');
+      ov.id = 'dispo-gate-mark';
+      ov.style.cssText = 'position:fixed; inset:0; z-index:12000; background:rgba(8,10,14,0.72); display:flex; align-items:center; justify-content:center; padding:24px;';
+      ov.innerHTML = `
+        <div style="width:min(720px, 100%); max-height:88vh; overflow-y:auto; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:16px; padding:22px;">
+          <div style="display:flex; gap:12px; align-items:flex-start; justify-content:space-between; margin-bottom:4px;">
+            <div style="min-width:0;">
+              <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary);">Resultado de la llamada</div>
+              <div style="font-size:17px; font-weight:700; color:var(--text-primary); margin-top:3px; overflow-wrap:anywhere;">${escHtml(trabadoNombre)}</div>
+            </div>
+            <button type="button" id="dispo-gate-mark-x" title="Cerrar (Esc)" style="flex-shrink:0; width:30px; height:30px; line-height:28px; text-align:center; padding:0; background:transparent; border:1px solid var(--border-subtle); border-radius:8px; color:var(--text-tertiary); cursor:pointer; font-size:16px; font-family:inherit;">×</button>
+          </div>
+          <p style="font-size:12px; color:var(--text-secondary); margin:0 0 16px;">${esLaTarjeta
+            ? 'Es el lead que tenés en pantalla. Marcás y seguís.'
+            : 'Se marca solo este lead. La cola del dialer no se mueve: al cerrar seguís en el lead que estabas.'}</p>
+          <div class="pd-disposition-grid">${_pdDispoGridHTML(trabadoId)}</div>
+        </div>`;
+      document.body.appendChild(ov);
+      _dispoGateMarkEl = ov;
+
+      // Los botones del grid traen el onclick de _pdHandleDispositionDirect; se
+      // intercepta acá en captura para rutear al camino correcto y cerrar la capa.
+      ov.addEventListener('click', (e) => {
+        if (e.target === ov) { window._dispoGateCloseMark(); return; }
+        if (e.target.closest?.('#dispo-gate-mark-x')) { window._dispoGateCloseMark(); return; }
+        const btn = e.target.closest?.('.pd-disp-btn');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        _dispoGateMarcar(trabadoId, btn.dataset.outcome);
+      }, true);
+
+      // Fase de CAPTURA: el handler de teclado del dialer vive en `document` en
+      // fase de burbuja, así que cortar la propagación acá impide que 1-9
+      // marquen la TARJETA en vez del lead trabado — que es exactamente el
+      // error que esta capa viene a evitar.
+      _dispoGateMarkKeys = (e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (e.key === 'Escape') { e.stopPropagation(); window._dispoGateCloseMark(); return; }
+        if (e.target?.matches?.('input,textarea,select')) return;
+        if (e.key >= '1' && e.key <= '9') {
+          e.stopPropagation();
+          e.preventDefault();
+          const o = PD_DISPO_OPTIONS[parseInt(e.key, 10) - 1];
+          if (o) _dispoGateMarcar(trabadoId, o.v);
+        }
+      };
+      document.addEventListener('keydown', _dispoGateMarkKeys, true);
+    };
+
+    function _dispoGateMarcar(leadId, outcome) {
+      if (!outcome) return;
+      window._dispoGateCloseMark();
+      // Si el lead trabado ES la tarjeta actual, el camino normal del dialer
+      // tiene que seguir funcionando entero (banner "Resultado guardado",
+      // autopiloto, hold).
+      if ((typeof _pd !== 'undefined') && _pd.active && _pd.queue[_pd.currentIdx] === leadId) {
+        window._pdHandleDispositionDirect(leadId, outcome);
+        return;
+      }
+      // No es la tarjeta: va por el handler base, que no toca la cola.
+      // NO se usa _pdHandleDisposition acá a propósito: su rama
+      // `if (!lead) { _pdAdvance(); return; }` saltearía la tarjeta ACTUAL si el
+      // lead trabado no está en el cache de la vista (pasa con el dialer de Hoy
+      // sobre un lead trabado que vino de Llamadas).
+      // El `_pd.pendingSave` que _dispoAfterSaved deja para este lead queda sin
+      // consumir y es inofensivo: _pdHandleDisposition lo pone en null al
+      // arrancar, y _consumeSaved filtra por leadId y por marca de tiempo.
+      window._handleCallDisposition(leadId, { value: outcome, disabled: false });
+    }
+
     function _dispoGateSet(leadId, leadName, startedAtIso) {
       _dispoGate = { leadId, leadName: leadName || '', startedAt: startedAtIso || null };
       try { localStorage.setItem(_dispoGateStorageKey(), JSON.stringify(_dispoGate)); } catch {}
@@ -10763,6 +10913,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _dispoGateClear(leadId) {
       if (leadId && _dispoGate && _dispoGate.leadId !== leadId) return;
       _dispoGate = null;
+      window._dispoGateCloseMark?.();   // [SOLO-A] sin gate no hay nada que marcar
       try { localStorage.removeItem(_dispoGateStorageKey()); } catch {}
       _dispoGateRenderBanner();
     }
@@ -14575,7 +14726,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       // attempts: lead.callAttempts si es número, si no callLog.length.
       const attempts = typeof lead.callAttempts === 'number' ? lead.callAttempts : log.length;
 
-      return { has: true, last, note, commitment, attempts };
+      // [SOLO-C] Desglose por resultado. "3 intentos previos" no alcanza para
+      // decidir en un segundo si vale la pena marcar: no es lo mismo que hayan
+      // atendido y cortado dos veces que que nunca hayan atendido.
+      // El orden es el del catálogo de resultados (el mismo de las teclas 1-9),
+      // no por frecuencia: así el desglose de dos leads distintos se compara de
+      // un vistazo en vez de tener que leer las etiquetas.
+      const _bdOrden = ['answered_interested', 'scheduled_with_admin', 'answered_not_interested',
+        'hung_up', 'no_answer', 'voicemail', 'callback_later', 'wrong_number', 'invalid_number'];
+      const _bdConteo = {};
+      for (const e of log) { const o = e && e.outcome; if (o) _bdConteo[o] = (_bdConteo[o] || 0) + 1; }
+      const breakdown = _bdOrden
+        .filter((o) => _bdConteo[o] > 0)
+        .map((o) => ({ outcome: o, label: HISTORY_OUTCOME_LABELS[o] || o, n: _bdConteo[o] }));
+      // Las veces que el propio vendedor dijo "vuelvo a llamar". Medido en
+      // producción el 2026-09-05: 12 leads activos con 2, 3 con 3 y 1 con 4, y
+      // ningún tope los frena — ni debería haberlo automático, son compromisos
+      // que tomó una persona. Lo que faltaba era verlo ANTES de posponerlo otra vez.
+      const postponed = _bdConteo.callback_later || 0;
+
+      return { has: true, last, note, commitment, attempts, breakdown, postponed };
     }
     // ─── [33-04] HISTORY-PURE: FIN ───
 
