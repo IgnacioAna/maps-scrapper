@@ -1511,5 +1511,17 @@ por config. Estado y evidencia completos en `.planning/STATE.md`.
        `tests/lead-history-breakdown.test.js` (13). **Suite 2457/2457 (131
        archivos).**
 
+214. ⚠️ **Una mutación que no se aplica se ve EXACTAMENTE igual que un test
+     robusto.** Verificando la Fase C, una de las tres mutaciones "pasó" y la
+     lectura obvia era "mi test es débil". En realidad el reemplazo nunca se
+     había aplicado: el one-liner de `python -c` buscaba un patrón con `
+` y
+     **`public/app.js` es CRLF**, así que no matcheó nada y el archivo quedó
+     intacto. **Regla: después de aplicar una mutación, confirmá con un `grep`
+     que el código cambió, ANTES de interpretar el resultado del test.** Es la
+     misma clase de error que la nota #207 (un test que pasa no prueba nada
+     hasta romperlo a propósito), un nivel más abajo. El helper de edición del
+     scratchpad detecta y preserva el EOL dominante; los `python -c` sueltos no.
+
 211. **Cache-buster actual: `app.js v=20260905a`** (reemplaza #203). `style.css`
      en `v=20260822a`, `wa.js` en `v=20260815c`.
