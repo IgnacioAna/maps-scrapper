@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: El correo que abre la puerta
+milestone: v6.0
+milestone_name: Operador solo
 status: executing
-last_updated: "2026-09-03T00:00:00.000Z"
-last_activity: 2026-09-03
+last_updated: "2026-09-05T00:00:00.000Z"
+last_activity: 2026-09-05
 # v5.0 (Phases 39-41) se construyó y deployó FUERA del flujo GSD: no hay
 # carpeta en .planning/phases ni PLAN/SUMMARY. Los contadores de abajo son
 # los de v4.0 (Phases 28-34, lo último que GSD sí trackeó); v5.0 se cuenta
@@ -20,7 +20,109 @@ progress:
 
 # SCM — STATE
 
-> Estado vivo del proyecto. Actualización: 2026-09-03.
+> Estado vivo del proyecto. Actualización: 2026-09-05.
+
+---
+
+## Milestone v6.0 — "Operador solo" (en curso, abierto 2026-09-05)
+
+El dialer se diseñó para un equipo de vendedoras supervisadas por un admin.
+Hoy lo usa **una persona que es admin y vendedor a la vez**, y varias
+defensas pensadas para el equipo son fricción sin beneficio. **No es un
+milestone de bugs: es revisar decisiones de producto para el modo de uso
+real.** Regla dura: **no se borra código** — lo que sobre se apaga por
+config o se inventaría para decidir después.
+
+**El estado real medido en producción el 2026-09-05** (6413 leads, volumen
+de Railway vía `/api/admin/export-data`, nunca `data/setters.json` del repo):
+2 usuarios (Ignacio admin — 691 llamadas, última hoy; Paula setter — 30
+llamadas, última el 10/07) y **3 setters**, porque `setter_agente_ia`
+cuenta como uno. "Operador solo" no es literal: hay un agente que llama, y
+por eso la atribución por setter **se queda**.
+
+| Punto | Qué se pidió | Estado |
+|---|---|---|
+| **1** | Marcar el resultado sin salir del Power Dialer | Reproducido · pendiente |
+| **2** | Los repetidos: ¿los topes se esquivan? | **Medido — no se tocan los topes** |
+| **3** | Historial visible antes de discar | **Ya existía** (plan 33-04) · falta el desglose |
+| **4** | La tarjeta no puede pisar lo que se escribe | **HECHA 2026-09-05** |
+| **5** | Inventario del modo equipo | Relevado · pendiente apagar por config |
+
+### Lo que la verificación cambió respecto de lo que se pidió
+
+- **Punto 2 — la hipótesis no se confirma y por eso NO se toca ningún tope.**
+  Con el criterio exacto del pedido (activos, 3+ llamadas, resultados solo
+  `no_answer`/`voicemail`/`hung_up`) hay **1 lead en 6413**: `Clínica Dental
+  Amigó` (`no_answer > hung_up > no_answer`, última llamada 28/07). El
+  mecanismo de alternancia existe, pero un tope único unificado hoy
+  afectaría a un lead. Además la descripción del pedido quedó a medias: el
+  tope de cortes cuenta el total **por vendedora** desde el 2026-08-16, no
+  el total absoluto.
+  **El repetido real es otro y no lo cubre ningún tope:** la acumulación de
+  `callback_later`, que no tiene límite ni debería tenerlo automático — son
+  compromisos que el operador tomó. Activos: 44 leads con 1, **12 con 2, 3
+  con 3 y 1 con 4** (`Wellness dental clinic`). Lo que falta no es un
+  descarte, es que la tarjeta avise "es la 4ª vez que lo posponés" antes de
+  apretar el botón por quinta vez → eso es el **punto 3**.
+- **Punto 3 — ya está construido.** `_leadHistoryHTML` / `_leadHistoryBrief`
+  (plan 33-04, con bloque puro y `tests/dial-history.test.js`) pintan "Ya
+  trabajado · N intentos previos" con el último resultado, cuándo, quién y
+  la última nota, **debajo del header y arriba del botón Llamar**, que es el
+  lugar pedido. Falta solo el desglose por resultado y el contador de veces
+  pospuesto.
+- **Punto 1 — la premisa vale para un camino de dos.** El salto automático a
+  Llamadas al colgar YA está bloqueado con el dialer abierto (nota #181,
+  2026-08-11). Lo que sigue roto es el **botón "Ir a marcar" del cartel**, y
+  se comporta distinto según de dónde se abrió el dialer:
+  desde **Hoy** → salta a Llamadas, el delegate del sidebar dispara
+  `_pdExit()` y el dialer queda en "sesión cerrada" (cola de 137 perdida);
+  desde **Llamadas** → `_dispoFocusLeadRow` no navega porque la vista ya es
+  la visible, así que **no pasa nada visible**: el foco va a un `<select>`
+  que está detrás del overlay. Parece que el botón está roto.
+  Confirmado además, por pedido explícito: **el Power Dialer NO avanza solo
+  al colgar sin resultado** (`_onTelnyxCallEnded` nunca llama `_pdAdvance`, y
+  el autopiloto tiene guard `if (_dispoGate) return`).
+- **Punto 4 — no existe ninguna actualización del servidor que repinte la
+  tarjeta.** Los dos polls (speed-to-lead 15s, callbacks 90s) solo muestran
+  toasts y `_refreshLeadPanels` repinta la lista, no el dialer. Los ~11
+  llamadores de `_pdRender` son todos acciones del propio usuario — y el bug
+  es real igual (ver abajo).
+
+### Fase B — la tarjeta no pisa lo que se está escribiendo · HECHA 2026-09-05
+
+**Reproducido en vivo** (preview con los 6413 leads de producción): con el
+Power Dialer abierto, escribir en `#pd-call-note` y después guardar "quién
+atendió" desde el modal de contacto secundario dejaba la nota en `""` y el
+foco en `<body>`. Después se marcaba el resultado y **la nota se iba vacía**:
+pérdida de datos silenciosa. Causa: `_pdRender` reescribe el `innerHTML`
+entero de `#pd-current-content`, donde vive el input.
+
+El fix preserva valor, foco y cursor con dos reglas que lo hacen inocuo:
+**(1)** solo restaura sobre la MISMA tarjeta (`main.dataset.pdLeadId ===
+lead.id`) — el borrador no viaja al lead siguiente; **(2)** solo restaura si
+el template dejó el campo vacío — si el render escribió algo, gana el render.
+Corolario de (2): las dos vías de disposición hacen `pdNoteEl.value = ''`
+antes de re-renderizar, así que una nota ya consumida no se resucita ni se
+reenvía pegada a la disposición siguiente (hay un test que lo fija).
+
+**Verificado por mutación en las dos direcciones.** En el navegador, con un
+centinela dentro del contenedor para probar que el re-render REALMENTE corrió
+(sin ese control el test pasa sin probar nada — nota #207): sin el fix →
+texto `""`, foco `BODY`, cursor `0`; con el fix → texto intacto, foco en
+`pd-call-note`, cursor en 11. Y en la suite, las 3 mutaciones (sacar el fix,
+romper la regla 1, romper la regla 2) tumban exactamente el test que
+corresponde. `tests/pd-preserve-draft.test.js` (15).
+
+### Nota sobre los artefactos GSD de este milestone
+
+`ROADMAP.md` sigue describiendo v4.0 y **no se reescribe**: el mismo criterio
+que la decisión del 2026-09-03 sobre v5.0 — el registro va acá, en el hecho,
+no en planes retroactivos. `state.advance-plan` corrompe STATE.md en este
+repo, así que este archivo se actualiza a mano.
+
+**Pendiente que necesita al dueño:** la cuenta de **Paula Kroff sigue activa
+con 342 leads asignados** y sin llamar desde el 10/07. Si el modo es
+realmente un operador solo, esos leads no los está trabajando nadie.
 
 ---
 

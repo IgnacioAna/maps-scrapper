@@ -7917,6 +7917,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pdRender();
       return true;
     }
+    // ─── [SOLO-B] El re-render no pisa lo que se está escribiendo ───
+    // _pdRender reescribe el innerHTML ENTERO de #pd-current-content, y ahí
+    // adentro vive #pd-call-note. Cualquiera de sus ~11 llamadores (guardar
+    // "quién atendió" o el teléfono del encargado, el Instagram del doctor,
+    // marcar un follow-up hecho, generar el brief IA) borraba la nota a medio
+    // tipear y mandaba el foco a <body>, sin ningún aviso. El SDR marcaba el
+    // resultado después y la nota se iba vacía: pérdida de datos silenciosa.
+    // Reproducido el 2026-09-05 contra datos de producción.
+    //
+    // Dos reglas que hacen que esto no pueda romper nada:
+    //  (1) Solo se restaura sobre la MISMA tarjeta (mismo lead). Al avanzar de
+    //      lead el borrador NO viaja — sería peor que perderlo.
+    //  (2) Solo se restaura si el template dejó ese campo VACÍO. Si el render
+    //      escribió un valor a propósito, gana el render, nunca el borrador.
+    // Corolario de (2): las dos vías de disposición hacen `pdNoteEl.value = ''`
+    // ANTES de re-renderizar, así que la nota ya consumida no se resucita y no
+    // puede reenviarse pegada a la disposición siguiente.
+    function _pdSnapshotInputs(root) {
+      const activo = document.activeElement;
+      const NO_TEXTO = new Set(['checkbox', 'radio', 'button', 'submit', 'reset', 'file', 'hidden']);
+      const out = [];
+      for (const el of root.querySelectorAll('input[id], textarea[id]')) {
+        if (el.tagName === 'INPUT' && NO_TEXTO.has(el.type)) continue;
+        const enfocado = el === activo;
+        if (!enfocado && !el.value) continue;   // nada que preservar
+        let selStart = null, selEnd = null;
+        try { selStart = el.selectionStart; selEnd = el.selectionEnd; } catch {}
+        out.push({ id: el.id, value: el.value, enfocado, selStart, selEnd });
+      }
+      return out.length ? out : null;
+    }
+    function _pdRestoreInputs(root, snap) {
+      for (const s of snap) {
+        let el = null;
+        try { el = root.querySelector('#' + CSS.escape(s.id)); } catch {}
+        if (!el || el.value) continue;          // regla (2)
+        el.value = s.value;
+        if (s.enfocado) {
+          try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} }
+          if (s.selStart !== null) { try { el.setSelectionRange(s.selStart, s.selEnd); } catch {} }
+        }
+      }
+    }
+
     function _pdRender() {
       if (_pd.closing) return; // Fase 37 (SES-02): la pantalla de cierre es la única dueña de #pd-current-content
       _pdCancelAutopilot(); // limpiar countdown previo antes de re-renderizar
@@ -8083,6 +8127,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           <kbd style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px; padding:1px 5px; background:rgba(15,17,21,0.18); border:1px solid rgba(15,17,21,0.25); border-radius:4px;">S</kbd>
         </button>
       </div>` : '';
+      // [SOLO-B] Borrador a salvo antes de reescribir la tarjeta (ver helpers arriba).
+      const _pdBorrador = (main.dataset.pdLeadId === lead.id) ? _pdSnapshotInputs(main) : null;
       main.innerHTML = `
       ${_holdBanner}
       <!-- Bloque 1: Header del lead + acciones primarias -->
@@ -8305,6 +8351,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           </button>`).join('')}
         </div>
       </div>`;
+
+      // [SOLO-B] Tarjeta ya pintada: devolver el borrador y el foco.
+      main.dataset.pdLeadId = lead.id;
+      if (_pdBorrador) _pdRestoreInputs(main, _pdBorrador);
 
       // Cola siguiente (próximos 5) — Sprint 39: flag-icons + más info contextual
       const queue = document.getElementById('pd-queue');

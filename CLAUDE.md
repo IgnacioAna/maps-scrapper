@@ -1385,3 +1385,78 @@ puertas por API. Las fases A, B, C y D de la auditoría ya estaban hechas
 
 208. **Suite completa 2410/2410 (128 archivos), `lint:env` verde.** Sin cambios
      en `public/` → el cache-buster sigue en `app.js v=20260903b`.
+
+## Milestone v6.0 "Operador solo" — Fase B (2026-09-05)
+
+El dialer se diseñó para un equipo supervisado y hoy lo usa una sola persona que
+es admin y vendedor a la vez. Varias defensas del modo equipo son fricción sin
+beneficio. **Regla dura del milestone: no se borra código** — lo que sobra se apaga
+por config. Estado y evidencia completos en `.planning/STATE.md`.
+
+209. **Lo que la verificación contra producción cambió antes de tocar nada**
+     (6413 leads del volumen de Railway, nunca `data/setters.json` del repo):
+     - **Los topes de reintento NO se tocan.** Con el criterio pedido (activos,
+       3+ llamadas, resultados solo `no_answer`/`voicemail`/`hung_up`) hay **1
+       lead en 6413**. El mecanismo de alternancia existe, pero un tope único
+       hoy afectaría a un lead. Ojo además: el tope de cortes cuenta el total
+       **por vendedora** desde 2026-08-16, no el total absoluto (nota #171).
+       **El repetido real es la acumulación de `callback_later`**, que no tiene
+       tope ni debería tenerlo automático (son compromisos del operador): 12
+       leads activos con 2, 3 con 3 y 1 con 4. Se resuelve mostrándolo en la
+       tarjeta, no descartando.
+     - **El historial antes de discar YA existe** (`_leadHistoryHTML` /
+       `_leadHistoryBrief`, plan 33-04, con bloque puro y test): pinta "Ya
+       trabajado · N intentos previos" con último resultado, cuándo, quién y la
+       última nota, debajo del header y arriba del botón Llamar. Falta solo el
+       desglose por resultado.
+     - **El Power Dialer NO avanza solo al colgar sin resultado**:
+       `_onTelnyxCallEnded` nunca llama `_pdAdvance` y el autopiloto tiene guard
+       `if (_dispoGate) return`.
+     - **"Ir a marcar" del cartel se porta distinto según de dónde se abrió el
+       dialer**: desde **Hoy** salta a Llamadas, el delegate del sidebar dispara
+       `_pdExit()` y la cola se pierde ("sesión cerrada"); desde **Llamadas** no
+       navega (la vista ya es la visible) y **no pasa nada visible** — el foco va
+       a un `<select>` que está detrás del overlay. El salto AUTOMÁTICO al colgar
+       ya estaba bloqueado con el dialer abierto (nota #181): esto es otro camino.
+     - **Ninguna actualización del servidor repinta la tarjeta**: los dos polls
+       (speed-to-lead 15s, callbacks 90s) solo muestran toasts y
+       `_refreshLeadPanels` repinta la lista, no el dialer.
+     - **Contexto que importa**: hay 3 setters porque `setter_agente_ia` es uno.
+       "Operador solo" no es literal — **la atribución por setter se queda**, es
+       lo que separa las llamadas humanas de las del agente.
+
+210. **Fase B — el re-render del Power Dialer ya no pisa lo que se está
+     escribiendo** (`v=20260905a`, solo `public/app.js` + cache-buster).
+     `_pdRender` reescribe el `innerHTML` ENTERO de `#pd-current-content`, y ahí
+     adentro vive `#pd-call-note`. Cualquiera de sus ~11 llamadores (guardar
+     "quién atendió" o el teléfono del encargado, el Instagram del doctor, marcar
+     un follow-up hecho, generar el brief IA) borraba la nota a medio tipear y
+     mandaba el foco a `<body>` **sin ningún aviso**: el SDR marcaba el resultado
+     después y la nota se iba vacía.
+     - Helpers nuevos `_pdSnapshotInputs` / `_pdRestoreInputs` con dos reglas que
+       hacen que preservar no pueda romper nada: **(1)** solo restaura sobre la
+       MISMA tarjeta (`main.dataset.pdLeadId === lead.id`) — el borrador no viaja
+       al lead siguiente; **(2)** solo restaura si el template dejó el campo
+       VACÍO — si el render escribió algo, gana el render.
+     - **Corolario de (2) que hay que preservar**: las dos vías de disposición
+       hacen `pdNoteEl.value = ''` ANTES de re-renderizar, así que una nota ya
+       consumida no se resucita ni se reenvía pegada a la disposición siguiente.
+       Hay un test que fija esos dos `value = ''`: **si alguien los saca, el fix
+       de preservación pasa de inocuo a peligroso.**
+     - ⚠️ **Lección de método, otra vez la #207**: la primera verificación en el
+       navegador dio "nota preservada" y **no probaba nada** — el re-render no
+       había corrido todavía (la escritura al `setters.json` de 27MB tarda, y con
+       el pane oculto Chrome throttlea los timers). Se rehizo con un **centinela**
+       dentro del contenedor: si el nodo sobrevive, el `innerHTML` no se
+       reescribió y la prueba es falsa. Con el control puesto: sin el fix → texto
+       `""`, foco `BODY`, cursor `0`; con el fix → texto intacto, foco en
+       `pd-call-note`, cursor en 11. **Para cualquier verificación futura de un
+       re-render: poner el centinela primero.**
+     - `tests/pd-preserve-draft.test.js` (15), molde de bloque puro de
+       `dial-history` (las funciones se extraen por el literal de su declaración
+       y se evalúan con un `document`/`CSS` inyectados). Las 3 mutaciones (sacar
+       el fix, romper la regla 1, romper la regla 2) tumban exactamente el test
+       que corresponde. **Suite completa 2425/2425 (129 archivos).**
+
+211. **Cache-buster actual: `app.js v=20260905a`** (reemplaza #203). `style.css`
+     en `v=20260822a`, `wa.js` en `v=20260815c`.
