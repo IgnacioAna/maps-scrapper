@@ -1,18 +1,3 @@
 {
-  "pending": [
-    {
-      "id": "pc_l_omdental_526641034465_1788564374821",
-      "leadId": "l_omdental_526641034465",
-      "leadName": "OM Dental",
-      "setterId": "setter_ignacio",
-      "userId": "user_admin_ignacio",
-      "startedAt": "2026-09-04T23:26:14.821Z",
-      "endedAt": "2026-09-04T23:26:39.735Z",
-      "durationSecs": 24,
-      "fromNumber": "+17864350620",
-      "reachedActive": true,
-      "createdAt": "2026-09-04T23:26:14.997Z",
-      "updatedAt": "2026-09-04T23:26:40.421Z"
-    }
-  ]
+  "pending": []
 }
