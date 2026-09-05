@@ -1,18 +1,18 @@
 {
   "pending": [
     {
-      "id": "pc_l_clinicaodontologicadentalwhite_576023866240_1787352057980",
-      "leadId": "l_clinicaodontologicadentalwhite_576023866240",
-      "leadName": "Clinica Odontologica Dental White",
+      "id": "pc_l_omdental_526641034465_1788564374821",
+      "leadId": "l_omdental_526641034465",
+      "leadName": "OM Dental",
       "setterId": "setter_ignacio",
       "userId": "user_admin_ignacio",
-      "startedAt": "2026-08-21T22:40:57.980Z",
-      "endedAt": null,
-      "durationSecs": 0,
-      "fromNumber": "+17867725783",
-      "reachedActive": false,
-      "createdAt": "2026-08-21T22:40:57.984Z",
-      "updatedAt": "2026-08-21T22:40:57.984Z"
+      "startedAt": "2026-09-04T23:26:14.821Z",
+      "endedAt": "2026-09-04T23:26:39.735Z",
+      "durationSecs": 24,
+      "fromNumber": "+17864350620",
+      "reachedActive": true,
+      "createdAt": "2026-09-04T23:26:14.997Z",
+      "updatedAt": "2026-09-04T23:26:40.421Z"
     }
   ]
 }
