@@ -1523,5 +1523,72 @@ por config. Estado y evidencia completos en `.planning/STATE.md`.
      hasta romperlo a propósito), un nivel más abajo. El helper de edición del
      scratchpad detecta y preserva el EOL dominante; los `python -c` sueltos no.
 
-211. **Cache-buster actual: `app.js v=20260905a`** (reemplaza #203). `style.css`
-     en `v=20260822a`, `wa.js` en `v=20260815c`.
+211. **Cache-buster actual: `app.js v=20260905b`** (reemplaza #203; el bump a
+     `b` es de #215). `style.css` en `v=20260822a`, `wa.js` en `v=20260815c`.
+
+## Sesión 2026-09-05 (parte 2) — Transcripción por trozos: el audio del lead no se perdía, Whisper lo devolvía en loop
+
+215. **Auditoría de la transcripción a pedido del proyecto de ventas** (síntoma:
+     4 segmentos del SDR por cada 1 del cliente, 12 llamadas con cero cliente,
+     una de 964 s con 117 segmentos todos del SDR). **Corrección de premisa
+     antes que nada: Telnyx NO graba nada** — los dos canales se capturan en el
+     browser (mixer Web Audio → MediaRecorder webm/opus 32 kbps) y se mandan a
+     `whisper-1` un archivo entero por canal; `speaker` es el canal, no hay
+     diarización. Medido en prod con `recMeta` + `asrDebug` (los instrumentos de
+     #154/#157 respondieron todo):
+     - **La grabación estaba sana**: canal del cliente 3,08 MB, nivel 0,481, 40 %
+       con señal, 0 % de pérdida de red, 960 s vistos por Whisper.
+     - **Whisper devolvió 977 segmentos de "Sí." (cr 7,3) del segundo 1 al 960**
+       y el filtro anti-loop (cr ≥ 6) los tiró todos — correctamente, no había
+       nada real. El "hueco" 579→917 del SDR era lo mismo: un loop de "Dentalink
+       es un software que se llama Dentalink." colapsado por el dedupe en un
+       segmento de 338 s.
+     - **Corpus (115 transcripts, 35 días)**: el cliente devolvía 2.531 crudos y
+       sobrevivían 292 (12 %); el SDR 1.424 → 1.155 (81 %). De las 12 con cero
+       cliente, 11 eran loops con grabación sana. El ratio 4:1 no era captura.
+     - **Mecanismo**: audio de banda telefónica, con ruido, amplificado y con
+       silencios; una vez que el decoder repite, arrastra el loop hasta el final
+       del archivo (usa el texto anterior como contexto). Con el canal entero en
+       una pasada, un loop de 16 minutos se come todo. El fallback automático de
+       temperatura que promete la API no rescató nada (devolvió cr 7,3 con
+       `temperature: 0`).
+     - **No se puede reproducir sobre el audio exacto** (no se persiste, #81).
+
+216. **Fix B + A (cache-buster `app.js v=20260905b`, backend `index.js`, tests
+     `tests/whisper-chunking.test.js` 13)**:
+     - **B — corte en trozos**: el browser rota los MediaRecorders cada
+       `_REC_CHUNK_S = 60` s sobre el mismo destination del mixer (arrancan los
+       nuevos primero, después se cierran los viejos): cada trozo es un webm
+       autocontenido con `offsetS`. Body nuevo `setterParts/leadParts:
+       [{ b64, offsetS }]`; el backend (`_normalizeAudioParts`) sigue aceptando
+       `setterAudioB64/leadAudioB64` de los tabs viejos como un único trozo con
+       offset 0. `_transcribeChannelParts` transcribe cada trozo (pool de 2 por
+       canal, 4 en vuelo por el rate limit de whisper-1), limpia POR TROZO y le
+       suma el offset a los timestamps → un loop muere en su trozo.
+     - **A — reintento con temperatura**: si un trozo vuelve colapsado
+       (`_whisperChunkCollapsed`: nada real tras la limpieza, o ≥ 50 % de los
+       crudos con cr ≥ 6) se reintenta UNA vez con `WHISPER_RETRY_TEMPERATURE =
+       0.4` y se conserva el resultado con más habla. Solo corre sobre el trozo
+       que falló: el costo por minuto no cambia.
+     - `asrDebug` por canal conserva el shape (`raw/kept/lax/audioS/rawSample`)
+       y suma `chunks/retried/rescued`; `recMeta` suma `chunkS/setterParts/
+       leadParts`. `globalThis.__whisper` expone `normalizeAudioParts`,
+       `chunkCollapsed`, `transcribeChannelParts` (con `callWhisper` inyectable).
+     - **Verificado**: 3 mutaciones (sin offset / sin reintento / sin fracción de
+       loop) tumban exactamente sus tests, con grep de que el archivo cambió
+       (#214); rotación real en el browser con osciladores: 3 trozos por canal,
+       cabecera EBML cada uno, decodifican a 59,3 / 60 / 28,5 s con offsets
+       0/60/120; hooks `__audioDebug.syncRecording/stopRecording/
+       pendingTranscribes/recParts` para repetirlo sin llamada. Suite 2470/2470.
+     - ⚠️ **La validación definitiva son las próximas llamadas reales**: revisar
+       en Entrenamiento IA que aparezca el lado del cliente y, en el callLog,
+       `asrDebug.lead.chunks/retried/rescued`. Los SDRs deben recargar una vez
+       (banner de versión #152); los tabs viejos siguen funcionando por el camino
+       legacy pero sin el corte.
+     - **Paginación de `/api/telnyx/calls/recent`**: ya estaba (#205) y quedó
+       deployada esta mañana; verificado en prod 1.279 llamadas en 3 páginas sin
+       repetidos. El proyecto de ventas la probó antes del deploy.
+     - **Brief IA "5.000 pacientes" de Odonto Express**: real, el sitio dice
+       "+5.000 Pacientes atendidos" y "+7 Años de experiencia". Lo generó "Brief
+       IA desde web" (#112) el 07/07. No hay verificación automática: en otro
+       lead el LLM podría inventar el número.

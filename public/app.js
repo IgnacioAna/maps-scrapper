@@ -11756,9 +11756,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ───────────────────────────────────────────────────────────────
     let _setterRecorder = null;
     let _leadRecorder = null;
-    let _setterChunks = [];
-    let _leadChunks = [];
     let _localStreamForRecording = null;
+    // 2026-09-05: CORTE EN TROZOS. Cada _REC_CHUNK_S segundos se cierran los
+    // recorders y arrancan otros nuevos sobre el MISMO destination del mixer:
+    // cada trozo es un webm autocontenido que el backend transcribe por separado
+    // (con su offset). Motivo: whisper-1 entra en loop de decoder sobre audio
+    // telefónico/silencio y, con el canal entero en una sola pasada, arrastra el
+    // loop hasta el final del archivo (llamada de 964 s del 05/09: 977 segmentos
+    // de "Sí." en el canal del cliente, 0 reales). Cortado, un loop muere en
+    // su trozo. El costo por minuto es el mismo (Whisper cobra por segundo).
+    const _REC_CHUNK_S = 60;
+    let _recMimeType = '';
+    let _recActive = null;        // { setter:{rec,chunks,startMs}, lead:{...} } — trozo en curso
+    let _recParts = null;         // { setter:[{blob,offsetS}], lead:[...] } — trozos cerrados
+    let _recRotateTimer = null;
+    let _recRotatePromise = null;
     // Bug 2026-07-13 + 2026-07-21 + 2026-07-22: AMBOS canales se graban vía mixer
     // Web Audio (MediaStreamAudioDestinationNode): el MediaRecorder graba el
     // destination (estable toda la llamada) y cada track de audio que aparece se
@@ -11834,10 +11846,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       try { if (_recChannels?.setter?.analyser) _startMicMonitor(); } catch {}
     }
 
+    function _recNewRecorder(name, mimeType) {
+      const chunks = [];
+      const rec = new MediaRecorder(_recChannels[name].dest.stream, { mimeType, audioBitsPerSecond: 32000 });
+      rec.ondataavailable = (e) => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      rec.onerror = (e) => { if (_recMeta) _recMeta[name + 'RecError'] = String(e?.error?.name || e?.error || 'error'); };
+      rec.start(1000); // chunk cada 1s
+      return { rec, chunks, startMs: Date.now() };
+    }
+    // Cierra el recorder de un trozo y guarda su blob con el offset en segundos
+    // desde el inicio de la grabación: el backend se lo suma a los timestamps que
+    // devuelve Whisper para ese trozo.
+    function _recFinalizePart(name, part) {
+      return new Promise((resolve) => {
+        if (!part) { resolve(); return; }
+        const done = () => {
+          if (part.chunks.length && _recParts?.[name]) {
+            const offsetS = Math.round(Math.max(0, part.startMs - (_recMeta?.startedAt || part.startMs)) / 100) / 10;
+            _recParts[name].push({ blob: new Blob(part.chunks, { type: 'audio/webm' }), offsetS });
+          }
+          resolve();
+        };
+        if (!part.rec || part.rec.state === 'inactive') { done(); return; }
+        part.rec.addEventListener('stop', done, { once: true });
+        try { part.rec.stop(); } catch { done(); }
+      });
+    }
+    // Rotación: arrancan los recorders NUEVOS primero (el hueco entre trozos es
+    // de milisegundos) y recién después se cierran los viejos.
+    async function _recRotate() {
+      if (!_recChannels || !_recActive || !_recMimeType) return;
+      const old = _recActive;
+      try {
+        _recActive = { setter: _recNewRecorder('setter', _recMimeType), lead: _recNewRecorder('lead', _recMimeType) };
+      } catch (e) { console.warn('[transcribe] rotación de trozo falló:', e.message); return; }
+      _setterRecorder = _recActive.setter.rec;
+      _leadRecorder = _recActive.lead.rec;
+      await Promise.all([_recFinalizePart('setter', old.setter), _recFinalizePart('lead', old.lead)]);
+    }
+
     function _startCallRecording() {
       if (_setterRecorder || _leadRecorder) return; // una sola vez por llamada
-      _setterChunks = [];
-      _leadChunks = [];
       // Los streams de la llamada son del SDK (no los poseemos): solo grabamos de
       // ellos (lectura). Pararles los tracks cortaría el mic de la llamada.
       _localStreamForRecording = null;
@@ -11879,15 +11928,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           _recCtx.createMediaStreamSource(ch.dest.stream).connect(ch.analyser);
           ch.lvlMax = 0; ch.lvlSamples = 0; ch.lvlActive = 0;
         }
-        _recMeta = { startedAt: Date.now(), v: (typeof _myAppVersion === 'string' ? _myAppVersion : ''), leadBoost: leadGain.gain.value };
-        _setterRecorder = new MediaRecorder(_recChannels.setter.dest.stream, { mimeType, audioBitsPerSecond: 32000 });
-        _setterRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _setterChunks.push(e.data); };
-        _setterRecorder.onerror = (e) => { if (_recMeta) _recMeta.setterRecError = String(e?.error?.name || e?.error || 'error'); };
-        _setterRecorder.start(1000); // chunk cada 1s
-        _leadRecorder = new MediaRecorder(_recChannels.lead.dest.stream, { mimeType, audioBitsPerSecond: 32000 });
-        _leadRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _leadChunks.push(e.data); };
-        _leadRecorder.onerror = (e) => { if (_recMeta) _recMeta.leadRecError = String(e?.error?.name || e?.error || 'error'); };
-        _leadRecorder.start(1000);
+        _recMeta = { startedAt: Date.now(), v: (typeof _myAppVersion === 'string' ? _myAppVersion : ''), leadBoost: leadGain.gain.value, chunkS: _REC_CHUNK_S };
+        _recMimeType = mimeType;
+        _recParts = { setter: [], lead: [] };
+        _recActive = { setter: _recNewRecorder('setter', mimeType), lead: _recNewRecorder('lead', mimeType) };
+        _setterRecorder = _recActive.setter.rec;
+        _leadRecorder = _recActive.lead.rec;
+        if (_recRotateTimer) clearInterval(_recRotateTimer);
+        _recRotateTimer = setInterval(() => {
+          _recRotatePromise = _recRotate().catch((e) => console.warn('[transcribe] rotación:', e?.message));
+        }, _REC_CHUNK_S * 1000);
         // Health check 1s: atrapa el swap de stream/track que ocurre ENTRE
         // notifications (el carrier renegocia al atender) + muestrea el nivel
         // de señal de cada canal para el recMeta.
@@ -11940,7 +11990,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cada entrada lleva su propio callStartedAtIso, así que el backend la pega
     // a la llamada correcta del callLog (_pickCallLogIdxForTranscript).
     const _MAX_PENDING_TRANSCRIBE = 3; // ~2MB de audio en el peor caso
-    let _pendingTranscribes = []; // [{ leadId, setterBlob, leadBlob, callStartedAtIso, recMeta, timer }]
+    let _pendingTranscribes = []; // [{ leadId, setterParts, leadParts, callStartedAtIso, recMeta, timer }]
     // [36-02] RESP-02: señal de "hay audio en camino para este lead". Se marca
     // ANTES de llamar a _stopCallRecordingAndBuffer y se borra en su .finally
     // (terminó buffereando algo o terminó sin dejar nada — las dos son un
@@ -11963,12 +12013,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function _stopCallRecordingAndBuffer(leadId, callStartedAtIso) {
       // Detener recorders. Esperamos un poco para que el último chunk caiga.
-      const stopRecorder = (rec) => new Promise((resolve) => {
-        if (!rec || rec.state === 'inactive') { resolve(); return; }
-        rec.addEventListener('stop', () => resolve(), { once: true });
-        try { rec.stop(); } catch { resolve(); }
-      });
-      await Promise.all([stopRecorder(_setterRecorder), stopRecorder(_leadRecorder)]);
+      if (_recRotateTimer) { clearInterval(_recRotateTimer); _recRotateTimer = null; }
+      // Si justo estaba rotando, esperar a que el trozo viejo quede cerrado antes
+      // de cerrar el actual (si no, el trozo viejo se perdería a mitad de camino).
+      if (_recRotatePromise) { try { await _recRotatePromise; } catch {} _recRotatePromise = null; }
+      const cur = _recActive;
+      _recActive = null;
+      await Promise.all([_recFinalizePart('setter', cur?.setter), _recFinalizePart('lead', cur?.lead)]);
       _setterRecorder = null;
       _leadRecorder = null;
       // Volcar los niveles medidos al recMeta ANTES del teardown (que borra los canales).
@@ -11986,10 +12037,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         try { _localStreamForRecording.getTracks().forEach(t => t.stop()); } catch {}
         _localStreamForRecording = null;
       }
-      const setterBlob = _setterChunks.length ? new Blob(_setterChunks, { type: 'audio/webm' }) : null;
-      const leadBlob = _leadChunks.length ? new Blob(_leadChunks, { type: 'audio/webm' }) : null;
-      _setterChunks = [];
-      _leadChunks = [];
+      const setterParts = _recParts?.setter || [];
+      const leadParts = _recParts?.lead || [];
+      _recParts = null;
+      const _sumParts = (ps) => ps.reduce((a, p) => a + (p.blob?.size || 0), 0);
       // Debug de la grabación (binds por canal, errores del recorder, bytes):
       // viaja con el transcribe y queda persistido para diagnosticar canales mudos.
       // Se le suman las métricas de RED de la llamada (2026-07-31): pérdida,
@@ -11997,7 +12048,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // queja de audio se sabe si la línea venía rota SIN depender del recuerdo
       // de quien llamó.
       const recMeta = _recMeta
-        ? { ..._recMeta, setterBytes: setterBlob?.size || 0, leadBytes: leadBlob?.size || 0,
+        ? { ..._recMeta, setterBytes: _sumParts(setterParts), leadBytes: _sumParts(leadParts),
+            setterParts: setterParts.length, leadParts: leadParts.length,
             leadPlaybackGain: _remoteAudio.active ? _remoteAudio.getGain() : null,
             // Config del mic con la que se hizo ESTA llamada: sin esto hay que
             // pedirle al SDR que mire la pantalla para saber qué capturó.
@@ -12008,13 +12060,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         : null;
       _recMeta = null;
       // Si no hay audio o llamada muy corta, no guardar nada
-      const totalBytes = (setterBlob?.size || 0) + (leadBlob?.size || 0);
+      const totalBytes = _sumParts(setterParts) + _sumParts(leadParts);
       if (totalBytes < 5000) {
         console.log('[transcribe] Audio muy corto (<5KB), saltando');
         return;
       }
       // Encolar SIN pisar lo anterior (ver el comentario de _pendingTranscribes).
-      const entry = { leadId, setterBlob, leadBlob, callStartedAtIso, recMeta, timer: null };
+      const entry = { leadId, setterParts, leadParts, callStartedAtIso, recMeta, timer: null };
       // Auto-descarte a los 10 min: si el SDR nunca marca disposition, no
       // retener los blobs en memoria indefinidamente.
       entry.timer = setTimeout(() => _dropPendingTranscription(entry), 10 * 60 * 1000);
@@ -12060,7 +12112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('[transcribe] Outcome "' + outcome + '" sin conversación — audio descartado, no se gasta Whisper');
         return;
       }
-      const { setterBlob, leadBlob, callStartedAtIso, recMeta } = pending;
+      const { setterParts, leadParts, callStartedAtIso, recMeta } = pending;
       // Convertir a base64
       const blobToB64 = (blob) => new Promise((resolve) => {
         if (!blob) { resolve(null); return; }
@@ -12074,13 +12126,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       try {
         window.showToast?.('Transcribiendo llamada (Whisper)…', { type: 'info', duration: 4000 });
-        const [setterAudioB64, leadAudioB64] = await Promise.all([
-          blobToB64(setterBlob),
-          blobToB64(leadBlob),
-        ]);
+        // Un trozo por entrada: { b64, offsetS }. El backend transcribe cada uno
+        // por separado y le suma el offset a los timestamps.
+        const partsToB64 = async (parts) => {
+          const out = [];
+          for (const p of (parts || [])) {
+            const b64 = await blobToB64(p.blob);
+            if (b64) out.push({ b64, offsetS: p.offsetS || 0 });
+          }
+          return out;
+        };
+        const [setterPartsB64, leadPartsB64] = await Promise.all([partsToB64(setterParts), partsToB64(leadParts)]);
         const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/transcribe`), {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ setterAudioB64, leadAudioB64, mimeType: 'audio/webm', callStartedAt: callStartedAtIso || null, recMeta: recMeta || null }),
+          body: JSON.stringify({ setterParts: setterPartsB64, leadParts: leadPartsB64, mimeType: 'audio/webm', callStartedAt: callStartedAtIso || null, recMeta: recMeta || null }),
         });
         if (!r.ok) {
           let msg = 'HTTP ' + r.status;
@@ -12340,6 +12399,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       captureNote: () => _micCaptureNote,
       micChain: () => _micChain && { micLabel: _micChain.micLabel, gain: _micChain.gain?.gain?.value },
       micState: () => _micMonitor && { peak: _micMonitor.peak, quiet: _micMonitor.quiet, spoke: _micMonitor.spoke, echoHits: _micMonitor.echoHits },
+      // 2026-09-05: hooks para probar la grabación por trozos con streams
+      // sintéticos desde la consola (sin llamada Telnyx real).
+      syncRecording: (call) => _syncCallRecording(call),
+      stopRecording: (leadId, iso) => _stopCallRecordingAndBuffer(leadId, iso),
+      pendingTranscribes: () => _pendingTranscribes,
+      recParts: () => _recParts,
     };
 
     // ── Calidad de la línea: RTCPeerConnection.getStats ────────────────────────
@@ -13083,8 +13148,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         try { _setterRecorder?.stop(); } catch {}
         try { _leadRecorder?.stop(); } catch {}
         if (_localStreamForRecording) { try { _localStreamForRecording.getTracks().forEach(t => t.stop()); } catch {}; _localStreamForRecording = null; }
+        if (_recRotateTimer) { clearInterval(_recRotateTimer); _recRotateTimer = null; }
+        _recRotatePromise = null; _recActive = null; _recParts = null;
         _setterRecorder = null; _leadRecorder = null;
-        _setterChunks = []; _leadChunks = [];
         _teardownRecordingGraph();
         _recMeta = null;
       }

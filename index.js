@@ -21513,10 +21513,143 @@ function _pickCallLogIdxForTranscript(callLog, callStartedAt) {
   return (bestIdx >= 0 && bestDelta <= MATCH_WINDOW_MS) ? bestIdx : -1;
 }
 
+// ── Corte en trozos + reintento (2026-09-05) ─────────────────────────────────
+// Whisper-1 en la API entra en loop de decoder sobre audio telefónico con
+// silencio, y una vez adentro arrastra el loop hasta el final del archivo (usa
+// el texto anterior como contexto de la ventana siguiente). Medido en prod
+// sobre 115 transcripts de 35 días: el canal del cliente devolvía 2.531
+// segmentos crudos de los que sobrevivían 292 (12%); 11 de las 12 llamadas
+// con cero segmentos del cliente eran loops ("Sí." ×977, "Hola." ×87) con la
+// grabación sana (nivel 0.42-0.61, 10-40% con señal). Dos defensas:
+//   (1) el browser corta cada canal en trozos de ~60 s, cada uno se transcribe
+//       por separado con su offset → un loop muere en su trozo;
+//   (2) si un trozo vuelve colapsado (nada real tras la limpieza, o la mayoría
+//       de sus segmentos con compression_ratio de loop), se reintenta UNA vez
+//       con temperatura explícita y se conserva el resultado con más habla.
+const WHISPER_RETRY_TEMPERATURE = 0.4;
+const WHISPER_MAX_PARTS = 60; // 60 trozos × 60 s = 1 h por canal, de sobra
+const WHISPER_PART_CONCURRENCY = 2; // × 2 canales = 4 requests en vuelo (rate limit de whisper-1)
+
+// Normaliza el body a { setter: [{b64, offsetS}], lead: [...] }. Acepta el
+// formato nuevo (setterParts/leadParts) y el legacy (setterAudioB64/leadAudioB64
+// = un único trozo con offset 0). Devuelve null si un trozo está malformado o
+// hay demasiados.
+function _normalizeAudioParts(body) {
+  const out = { setter: [], lead: [] };
+  for (const ch of ['setter', 'lead']) {
+    const arr = body?.[ch + 'Parts'];
+    if (Array.isArray(arr)) {
+      for (const p of arr) {
+        if (!p || typeof p !== 'object' || typeof p.b64 !== 'string' || !p.b64) return null;
+        const off = Number(p.offsetS);
+        out[ch].push({ b64: p.b64, offsetS: Number.isFinite(off) ? Math.max(0, off) : 0 });
+      }
+    } else if (typeof body?.[ch + 'AudioB64'] === 'string' && body[ch + 'AudioB64']) {
+      out[ch].push({ b64: body[ch + 'AudioB64'], offsetS: 0 });
+    }
+    if (out[ch].length > WHISPER_MAX_PARTS) return null;
+  }
+  return out;
+}
+
+// ¿El trozo volvió en loop? (a) Whisper devolvió algo y NADA sobrevivió a la
+// limpieza, o (b) la mayoría de los segmentos crudos tienen compression_ratio
+// de loop (>= 6, el umbral que la limpieza usa para descartar).
+function _whisperChunkCollapsed(rawSegments, keptSegments) {
+  const raw = rawSegments || [];
+  if (!raw.length) return false;
+  if (raw.length >= 3 && (keptSegments || []).length === 0) return true;
+  const loops = raw.filter((s) => (typeof s.compression_ratio === 'number' ? s.compression_ratio : 0) >= 6).length;
+  return loops / raw.length >= 0.5;
+}
+
+// Transcribe los trozos de UN canal. `opts.callWhisper(part, temperature)` →
+// { segments, duration } (inyectable: los tests lo simulan). Devuelve
+// { segments (ya con offset, ordenados), debug } con el mismo shape que el
+// asrDebug histórico más chunks/retried/rescued.
+async function _transcribeChannelParts(parts, speakerLabel, opts = {}) {
+  const { callWhisper, activePct = null, promptText = '', concurrency = WHISPER_PART_CONCURRENCY } = opts;
+  if (typeof callWhisper !== 'function') throw new Error('callWhisper requerido');
+  const cleanBoth = (raw) => {
+    let cleaned = _cleanWhisperSegments(raw, speakerLabel, promptText);
+    let lax = false;
+    // Rescate por medición (2026-07-24): la limpieza estricta vació el trozo pero
+    // el medidor del browser dice que hubo voz real en el canal → re-limpiar lax.
+    if (cleaned.length === 0 && raw.length > 0 && typeof activePct === 'number' && activePct >= 8) {
+      cleaned = _cleanWhisperSegments(raw, speakerLabel, promptText, { lax: true });
+      lax = cleaned.length > 0;
+    }
+    return { cleaned, lax };
+  };
+  let retried = 0;
+  let rescued = 0;
+  const tasks = (parts || []).map((part, idx) => async () => {
+    const first = await callWhisper(part, 0);
+    let raw = first?.segments || [];
+    let duration = Number(first?.duration) || 0;
+    let { cleaned, lax } = cleanBoth(raw);
+    let usedRetry = false;
+    if (_whisperChunkCollapsed(raw, cleaned)) {
+      retried++;
+      try {
+        const second = await callWhisper(part, WHISPER_RETRY_TEMPERATURE);
+        const raw2 = second?.segments || [];
+        const r2 = cleanBoth(raw2);
+        if (r2.cleaned.length > cleaned.length) {
+          raw = raw2; cleaned = r2.cleaned; lax = r2.lax; usedRetry = true; rescued++;
+          if (Number(second?.duration) > 0) duration = Number(second.duration);
+        }
+      } catch (e) {
+        console.warn(`[transcribe] ${speakerLabel} trozo ${idx}: reintento con temperatura falló (${e?.message || e})`);
+      }
+    }
+    const off = Number(part.offsetS) || 0;
+    const shifted = cleaned.map((s) => ({
+      ...s,
+      start: Math.round((s.start + off) * 10) / 10,
+      end: Math.round((s.end + off) * 10) / 10,
+    }));
+    return { idx, raw, cleaned: shifted, lax, duration, usedRetry };
+  });
+  const results = await _runPool(tasks, concurrency);
+  const debug = { raw: 0, kept: 0, chunks: results.length };
+  let audioS = 0;
+  let anyLax = false;
+  let rawSample = null;
+  const segments = [];
+  for (const r of results) {
+    debug.raw += r.raw.length;
+    debug.kept += r.cleaned.length;
+    audioS += r.duration;
+    if (r.lax) anyLax = true;
+    // Muestra de lo que Whisper devolvió y no sobrevivió — del primer trozo que
+    // quedó vacío (si no, no ocupa espacio).
+    if (!rawSample && r.raw.length && r.cleaned.length === 0) {
+      rawSample = r.raw.slice(0, 4).map((s) => ({
+        t: String(s.text || '').trim().slice(0, 80),
+        nsp: Math.round((s.no_speech_prob || 0) * 100) / 100,
+        alp: Math.round((s.avg_logprob || 0) * 100) / 100,
+        cr: Math.round((s.compression_ratio || 0) * 100) / 100,
+      }));
+    }
+    segments.push(...r.cleaned);
+  }
+  segments.sort((a, b) => a.start - b.start);
+  if (anyLax) debug.lax = true;
+  if (audioS > 0) debug.audioS = Math.round(audioS);
+  if (retried) { debug.retried = retried; debug.rescued = rescued; }
+  if (rawSample) debug.rawSample = rawSample;
+  return { segments, debug };
+}
+
 globalThis.__whisper = {
   cleanSegments: _cleanWhisperSegments,
   collapseRepeatedText: _collapseRepeatedText,
   pickCallLogIdx: _pickCallLogIdxForTranscript,
+  normalizeAudioParts: _normalizeAudioParts,
+  chunkCollapsed: _whisperChunkCollapsed,
+  transcribeChannelParts: _transcribeChannelParts,
+  RETRY_TEMPERATURE: WHISPER_RETRY_TEMPERATURE,
 };
 
 // POST /api/telnyx/calls/:leadId/transcribe — transcribe el audio de una
@@ -21525,8 +21658,8 @@ globalThis.__whisper = {
 // timestamps. NO persiste audio — solo guarda el transcript final en
 // lead.callLog[ultimo].transcript. Requiere OPENAI_API_KEY env var.
 //
-// Body JSON: { setterAudioB64?: string, leadAudioB64?: string, mimeType?: string }
-// Al menos uno de los dos audios debe estar.
+// Body JSON: { setterParts?: [{ b64, offsetS }], leadParts?: [{ b64, offsetS }], mimeType?, callStartedAt?, recMeta? }
+// (legacy: setterAudioB64 / leadAudioB64 = un único trozo con offset 0). Al menos un trozo.
 app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) => {
   const role = req.auth?.user?.role;
   const { leadId } = req.params;
@@ -21552,9 +21685,16 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   if (!process.env.OPENAI_API_KEY) {
     return res.status(503).json({ error: 'OPENAI_API_KEY no configurada. Setear como env var en Railway.' });
   }
-  const { setterAudioB64, leadAudioB64, mimeType, callStartedAt, recMeta } = req.body || {};
-  if (!setterAudioB64 && !leadAudioB64) {
-    return res.status(400).json({ error: 'Al menos uno de setterAudioB64 o leadAudioB64 requerido' });
+  const { mimeType, callStartedAt, recMeta } = req.body || {};
+  // 2026-09-05: el browser manda TROZOS ({ b64, offsetS }) por canal. Los tabs
+  // con app.js viejo siguen mandando setterAudioB64/leadAudioB64 enteros y se
+  // aceptan como un único trozo con offset 0.
+  const audioParts = _normalizeAudioParts(req.body);
+  if (!audioParts) {
+    return res.status(400).json({ error: 'setterParts/leadParts malformados (esperado [{ b64, offsetS }], máx ' + WHISPER_MAX_PARTS + ' por canal).' });
+  }
+  if (!audioParts.setter.length && !audioParts.lead.length) {
+    return res.status(400).json({ error: 'Al menos un trozo de audio requerido (setterParts/leadParts o setterAudioB64/leadAudioB64).' });
   }
   // Debug de la grabación del browser (2026-07-21): binds por canal, errores del
   // MediaRecorder y bytes por blob. Se persiste con el transcript para poder
@@ -21582,7 +21722,9 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       // se hizo la llamada. Los datos de prod mostraron picos de 0.188 y 0.368
       // (cliente no escucha al SDR) y 1.146 (saturando) — sin esto no se puede
       // saber con qué config salió cada llamada.
-      'micGain']) {
+      'micGain',
+      // 2026-09-05: corte en trozos — tamaño del trozo y cuántos mandó cada canal.
+      'chunkS', 'setterParts', 'leadParts']) {
       if (typeof recMeta[k] === 'number' && Number.isFinite(recMeta[k])) out[k] = recMeta[k];
     }
     // micLabel = micrófono REALMENTE capturado (responde "tengo auriculares
@@ -21616,76 +21758,61 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   // limpieza, si hubo rescate lax, y una muestra de lo descartado (con métricas).
   // Se persiste en transcript.asrDebug → el próximo transcript raro se lee, no se adivina.
   const asrDebug = {};
-  const transcribe = async (b64, speakerLabel) => {
-    if (!b64) return [];
+  // 2026-09-05: una llamada a Whisper POR TROZO (el browser corta la grabación
+  // cada 60 s, ver _REC_CHUNK_S en app.js). Antes iba el canal entero en una
+  // sola pasada y un loop de decoder arrastraba el resto del archivo: en la
+  // llamada de 964 s del 05/09 el canal del cliente volvió como 977 segmentos
+  // de "Sí." (cr 7.3) desde el segundo 1 al 960, y el del SDR quedó en loop
+  // 338 s mientras escuchaba. Cortado, un loop muere en su trozo; y si un trozo
+  // vuelve en loop, se reintenta UNA vez con temperatura explícita
+  // (_transcribeChannelParts). El costo por minuto no cambia — Whisper cobra
+  // por segundo de audio — salvo el reintento, que solo corre sobre el trozo
+  // que falló.
+  const callWhisper = async (part, temperature) => {
+    const buf = part.buf || (part.buf = Buffer.from(part.b64, 'base64'));
+    // Whisper limit es 25MB. Con trozos de 60 s a 32 kbps no se llega nunca; el
+    // guard queda para el camino legacy (canal entero de un tab viejo).
+    if (buf.byteLength > 25 * 1024 * 1024) {
+      console.warn('[transcribe] trozo excede 25MB, saltando');
+      return { segments: [], duration: 0 };
+    }
+    // File global está en Node 20+. Pasamos al SDK.
+    const file = new File([buf], `chunk.${fileExt}`, { type: fileType });
+    const reqOpts = {
+      file,
+      model: 'whisper-1',
+      language: 'es',
+      temperature,
+      response_format: 'verbose_json',
+      timestamp_granularities: ['segment'],
+    };
+    if (WHISPER_PROMPT) reqOpts.prompt = WHISPER_PROMPT;
+    // Retry 1x ante error transitorio (network/5xx/timeout). El audio NO se
+    // persiste en disco (decisión de diseño), así que este reintento inmediato
+    // es la única ventana para no perder la transcripción.
+    let result;
+    try {
+      result = await openaiClient.audio.transcriptions.create(reqOpts);
+    } catch (firstErr) {
+      console.warn(`[transcribe] intento 1 falló (${firstErr?.message || firstErr}), reintentando en 2s…`);
+      await new Promise((r) => setTimeout(r, 2000));
+      result = await openaiClient.audio.transcriptions.create(reqOpts);
+    }
+    return { segments: result.segments || [], duration: typeof result.duration === 'number' ? result.duration : 0 };
+  };
+  const transcribeChannel = async (parts, speakerLabel) => {
+    if (!parts.length) return [];
     // % de tiempo con señal medido por el browser en el mixer de ESTE canal
     // (ground truth de que hubo audio real — viene en recMeta).
     const activePct = typeof recMetaClean?.[speakerLabel + 'ActivePct'] === 'number'
       ? recMetaClean[speakerLabel + 'ActivePct'] : null;
     try {
-      const buf = Buffer.from(b64, 'base64');
-      // Whisper limit es 25MB. Para audios webm opus, 25MB son ~3hs. Phase 6
-      // max llamada es ~10min → no llegamos al límite.
-      if (buf.byteLength > 25 * 1024 * 1024) {
-        console.warn(`[transcribe] ${speakerLabel} audio excede 25MB, saltando`);
-        return [];
-      }
-      // File global está en Node 20+. Pasamos al SDK.
-      const file = new File([buf], `${speakerLabel}.${fileExt}`, { type: fileType });
-      const reqOpts = {
-        file,
-        model: 'whisper-1',
-        language: 'es',
-        temperature: 0,
-        response_format: 'verbose_json',
-        timestamp_granularities: ['segment'],
-      };
-      if (WHISPER_PROMPT) reqOpts.prompt = WHISPER_PROMPT;
-      // Retry 1x ante error transitorio (network/5xx/timeout). El audio NO se
-      // persiste en disco (decisión de diseño), así que este reintento inmediato
-      // es la única ventana para no perder la transcripción.
-      let result;
-      try {
-        result = await openaiClient.audio.transcriptions.create(reqOpts);
-      } catch (firstErr) {
-        console.warn(`[transcribe] ${speakerLabel} intento 1 falló (${firstErr?.message || firstErr}), reintentando en 2s…`);
-        await new Promise((r) => setTimeout(r, 2000));
-        result = await openaiClient.audio.transcriptions.create(reqOpts);
-      }
-      const raw = result.segments || [];
-      let cleaned = _cleanWhisperSegments(raw, speakerLabel, WHISPER_PROMPT);
-      let laxUsed = false;
-      // Rescate por medición (2026-07-24): la limpieza estricta vació el canal
-      // pero el medidor del browser dice que hubo voz real (activePct alto) →
-      // la limpieza se comió habla verdadera con métricas pobres (línea
-      // telefónica mala), no silencio. Re-limpiar en modo lax: solo eco del
-      // prompt + colapso de loops. Caso real 2026-07-23: canales con 12-46% de
-      // actividad medida salían con 0 segmentos del filtro estricto.
-      if (cleaned.length === 0 && raw.length > 0 && typeof activePct === 'number' && activePct >= 8) {
-        cleaned = _cleanWhisperSegments(raw, speakerLabel, WHISPER_PROMPT, { lax: true });
-        laxUsed = cleaned.length > 0;
-        if (laxUsed) console.log(`[transcribe] ${speakerLabel}: rescate lax (activePct=${activePct}, raw=${raw.length} → ${cleaned.length} segs)`);
-      }
-      if (raw.length >= 3 && cleaned.length === 0) {
-        console.log(`[transcribe] ${speakerLabel}: descartado por alucinación de silencio/buzón`);
-      }
-      asrDebug[speakerLabel] = {
-        raw: raw.length,
-        kept: cleaned.length,
-        ...(laxUsed ? { lax: true } : {}),
-        ...(typeof result.duration === 'number' ? { audioS: Math.round(result.duration) } : {}),
-        // Muestra de lo que Whisper devolvió y no sobrevivió — solo cuando el
-        // canal quedó vacío o hizo falta rescate (si no, no ocupa espacio).
-        ...((cleaned.length === 0 || laxUsed) && raw.length > 0 ? {
-          rawSample: raw.slice(0, 4).map((s) => ({
-            t: String(s.text || '').trim().slice(0, 80),
-            nsp: Math.round((s.no_speech_prob || 0) * 100) / 100,
-            alp: Math.round((s.avg_logprob || 0) * 100) / 100,
-            cr: Math.round((s.compression_ratio || 0) * 100) / 100,
-          })),
-        } : {}),
-      };
-      return cleaned;
+      const { segments, debug } = await _transcribeChannelParts(parts, speakerLabel, { callWhisper, activePct, promptText: WHISPER_PROMPT });
+      if (debug.lax) console.log(`[transcribe] ${speakerLabel}: rescate lax (activePct=${activePct}, raw=${debug.raw} → ${debug.kept} segs)`);
+      if (debug.retried) console.log(`[transcribe] ${speakerLabel}: ${debug.retried} trozo(s) en loop reintentados con temperature=${WHISPER_RETRY_TEMPERATURE}, ${debug.rescued} rescatados`);
+      if (debug.raw >= 3 && debug.kept === 0) console.log(`[transcribe] ${speakerLabel}: descartado por alucinación de silencio/buzón`);
+      asrDebug[speakerLabel] = debug;
+      return segments;
     } catch (e) {
       console.error(`[transcribe] ${speakerLabel} Whisper error:`, e?.message || e);
       throw e;
@@ -21693,16 +21820,16 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   };
   try {
     const [setterSegs, leadSegs] = await Promise.all([
-      transcribe(setterAudioB64, 'setter'),
-      transcribe(leadAudioB64, 'lead'),
+      transcribeChannel(audioParts.setter, 'setter'),
+      transcribeChannel(audioParts.lead, 'lead'),
     ]);
     const merged = [...setterSegs, ...leadSegs].sort((a, b) => a.start - b.start);
     // Visibilidad de canales mudos: si un canal vino con audio pero terminó sin
     // segmentos, es señal de blob silencioso/corrupto (bug de grabación) o de
     // Whisper descartando el canal — dejar rastro en logs de Railway.
     console.log(`[transcribe] lead=${leadId} setterSegs=${setterSegs.length} leadSegs=${leadSegs.length}` + (recMetaClean ? ' recMeta=' + JSON.stringify(recMetaClean) : ''));
-    if (setterAudioB64 && setterSegs.length === 0 && leadSegs.length > 0) console.warn('[transcribe] canal SETTER vacío con audio presente (posible blob mudo)');
-    if (leadAudioB64 && leadSegs.length === 0 && setterSegs.length > 0) console.warn('[transcribe] canal LEAD vacío con audio presente (posible blob mudo)');
+    if (audioParts.setter.length && setterSegs.length === 0 && leadSegs.length > 0) console.warn('[transcribe] canal SETTER vacío con audio presente (posible blob mudo)');
+    if (audioParts.lead.length && leadSegs.length === 0 && setterSegs.length > 0) console.warn('[transcribe] canal LEAD vacío con audio presente (posible blob mudo)');
     // Audit fix: recargar fresh data justo antes de escribir (TOCTOU). Whisper
     // tarda ~5-30s, otros endpoints pueden haber escrito en el JSON entre tanto.
     // Audit fix: matching del callLog entry correcto por callStartedAt si vino.
